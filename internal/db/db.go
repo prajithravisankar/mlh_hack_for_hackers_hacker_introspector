@@ -33,8 +33,6 @@ func InitializeDatabase() {
 
 	// AutoMigrate automatically creates the tables in your DB based on your models
 	migrationError := GlobalDatabaseAccessor.AutoMigrate(
-		&introspect.Repository{},
-		&introspect.ContributorStats{},
 		&introspect.AnalyticsReport{},
 	)
 
