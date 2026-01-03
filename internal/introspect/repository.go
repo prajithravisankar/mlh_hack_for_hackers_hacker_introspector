@@ -27,8 +27,7 @@ func (repo *ReportRepository) SaveReport(report *AnalyticsReport) error {
 
 func (repo *ReportRepository) GetReportByRepoName(fullName string) (*AnalyticsReport, error) {
 	var report AnalyticsReport
-
-	result := repo.databaseConnection.Where("repo_full_name = ?", fullName).First(&report)
+	result := repo.databaseConnection.Where("full_name = ?", fullName).First(&report)
 
 	if result.Error != nil {
 		return nil, fmt.Errorf("report not found: %w", result.Error)

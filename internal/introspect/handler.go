@@ -1,0 +1,54 @@
+package introspect
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+type Handler struct {
+	repo *ReportRepository
+}
+
+func NewHandler(repo *ReportRepository) *Handler {
+	return &Handler{
+		repo: repo,
+	}
+}
+
+type AnalyzeRequest struct {
+	RepoURL string `json:"repo_url" binding:"required,url"`
+}
+
+func (h *Handler) AnalyzeRepo(context *gin.Context) {
+	var req AnalyzeRequest
+
+	if err := context.ShouldBindJSON(&req); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid URL provided",
+		})
+
+		return
+	}
+
+	context.JSON(http.StatusOK, gin.H{
+		"message": "Analysis started for " + req.RepoURL,
+	})
+}
+
+func (h *Handler) GetReport(context *gin.Context) {
+	owner := context.Param("owner")
+	repoName := context.Param("repo")
+	fullName := owner + "/" + repoName
+
+	report, err := h.repo.GetReportByRepoName(fullName)
+	if err != nil {
+		context.JSON(http.StatusNotFound, gin.H{
+			"error": "report not found",
+		})
+
+		return
+	}
+
+	context.JSON(http.StatusOK, report)
+}
