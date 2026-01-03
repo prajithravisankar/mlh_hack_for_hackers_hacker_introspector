@@ -1,6 +1,7 @@
 package introspect
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -8,13 +9,13 @@ import (
 )
 
 type Handler struct {
-	repo *ReportRepository
+	repo         *ReportRepository
 	githubClient *github.Client
 }
 
 func NewHandler(repo *ReportRepository, githubClient *github.Client) *Handler {
 	return &Handler{
-		repo: repo,
+		repo:         repo,
 		githubClient: githubClient,
 	}
 }
@@ -23,35 +24,56 @@ type AnalyzeRequest struct {
 	RepoURL string `json:"repo_url" binding:"required,url"`
 }
 
-func (h *Handler) AnalyzeRepo(context *gin.Context) {
+func (h *Handler) AnalyzeRepo(c *gin.Context) {
 	var req AnalyzeRequest
-
-	if err := context.ShouldBindJSON(&req); err != nil {
-		context.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid URL provided",
-		})
-
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid URL provided"})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{
-		"message": "Analysis started for " + req.RepoURL,
-	})
+	// 1. Parse URL
+	owner, repoName, err := github.ExtractOwnerAndRepo(req.RepoURL)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid GitHub URL format"})
+		return
+	}
+
+	fullName := owner + "/" + repoName
+
+	// 2. Check Cache (Database)
+	existingReport, err := h.repo.GetReportByRepoName(fullName)
+	if err == nil {
+		// Found it! Return cached version
+		c.JSON(http.StatusOK, existingReport)
+		return
+	}
+
+	// 3. Not found? Fetch from GitHub
+	report, err := h.githubClient.FetchEverything(owner, repoName)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 4. Save to Database for next time
+	if err := h.repo.SaveReport(report); err != nil {
+		fmt.Println("Error saving to DB:", err)
+	}
+
+	// 5. Return fresh report
+	c.JSON(http.StatusOK, report)
 }
 
-func (h *Handler) GetReport(context *gin.Context) {
-	owner := context.Param("owner")
-	repoName := context.Param("repo")
+func (h *Handler) GetReport(c *gin.Context) {
+	owner := c.Param("owner")
+	repoName := c.Param("repo")
 	fullName := owner + "/" + repoName
 
 	report, err := h.repo.GetReportByRepoName(fullName)
 	if err != nil {
-		context.JSON(http.StatusNotFound, gin.H{
-			"error": "report not found",
-		})
-
+		c.JSON(http.StatusNotFound, gin.H{"error": "report not found"})
 		return
 	}
 
-	context.JSON(http.StatusOK, report)
+	c.JSON(http.StatusOK, report)
 }

@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/prajithravisankar/mlh_hack_for_hackers_hacker_introspector/internal/introspect"
+	"github.com/prajithravisankar/mlh_hack_for_hackers_hacker_introspector/internal/models"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -19,8 +19,8 @@ func InitializeDatabase() {
 
 	if productionDatabaseURL != "" {
 		fmt.Println("Connecting to Production Database...")
+		// Add Postgres connection logic here later
 	} else {
-		// Default to local SQLite for development
 		fmt.Println("Connecting to Development Database...")
 		localStoragePath := "dev.db"
 		GlobalDatabaseAccessor, databaseError = gorm.Open(sqlite.Open(localStoragePath), &gorm.Config{})
@@ -31,9 +31,9 @@ func InitializeDatabase() {
 		fmt.Println("Successfully connected to local SQLite at:", localStoragePath)
 	}
 
-	// AutoMigrate automatically creates the tables in your DB based on your models
+	// AutoMigrate automatically creates the tables based on the NEW models package
 	migrationError := GlobalDatabaseAccessor.AutoMigrate(
-		&introspect.AnalyticsReport{},
+		&models.AnalyticsReport{},
 	)
 
 	if migrationError != nil {

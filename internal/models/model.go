@@ -1,10 +1,10 @@
-package introspect
+package models
 
 import "time"
 
+// Repository represents the metadata.
 type Repository struct {
-	Name string `json:"name"`
-	// We index FullName because we search by it in the Repository.go
+	Name        string         `json:"name"`
 	FullName    string         `json:"full_name" gorm:"index"`
 	Description string         `json:"description"`
 	HTMLURL     string         `json:"html_url"`

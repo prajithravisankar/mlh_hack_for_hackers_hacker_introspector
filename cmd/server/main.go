@@ -7,17 +7,31 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+
+	// Import the packages we built
 	"github.com/prajithravisankar/mlh_hack_for_hackers_hacker_introspector/internal/db"
+	"github.com/prajithravisankar/mlh_hack_for_hackers_hacker_introspector/internal/github" // <--- Added this import
 	"github.com/prajithravisankar/mlh_hack_for_hackers_hacker_introspector/internal/introspect"
 )
 
 func main() {
+	// 1. Initialize Database
 	db.InitializeDatabase()
 
+	// 2. Initialize GitHub Client (The "General" we built)
+	ghClient := github.NewClient() // <--- NEW STEP
+
+	// 3. Create Repository (The Pantry Manager)
 	repo := introspect.NewReportRepository(db.GlobalDatabaseAccessor)
-	handler := introspect.NewHandler(repo)
+
+	// 4. Create Handler (The Chef)
+	// We now pass BOTH the repo and the github client!
+	handler := introspect.NewHandler(repo, ghClient) // <--- UPDATED THIS LINE
+
+	// 5. Setup Router
 	router := gin.Default()
 
+	// CORS Setup
 	router.Use(cors.New(cors.Config{
 		AllowAllOrigins:  true,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"},
