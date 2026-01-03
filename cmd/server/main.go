@@ -8,6 +8,8 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
+	"github.com/joho/godotenv"
+
 	// Import the packages we built
 	"github.com/prajithravisankar/mlh_hack_for_hackers_hacker_introspector/internal/db"
 	"github.com/prajithravisankar/mlh_hack_for_hackers_hacker_introspector/internal/github" // <--- Added this import
@@ -15,6 +17,11 @@ import (
 )
 
 func main() {
+
+	if err := godotenv.Load(); err != nil {
+		log.Println("Warning: No .env file found. Ensure GITHUB_TOKEN is set in system environment.")
+	}
+
 	// 1. Initialize Database
 	db.InitializeDatabase()
 
