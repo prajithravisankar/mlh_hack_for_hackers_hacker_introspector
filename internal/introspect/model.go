@@ -5,7 +5,7 @@ import "time"
 // Repository represents the high-level metadata of the project
 type Repository struct {
 	Name        string         `json:"name"`
-	FullName    string         `json:"full_name"`
+	FullName    string         `json:"full_name" gorm:"uniqueIndex"`
 	Description string         `json:"description"`
 	HTMLURL     string         `json:"html_url"`
 	Language    string         `json:"language"`  // Primary language
