@@ -3,28 +3,43 @@ package db
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/prajithravisankar/mlh_hack_for_hackers_hacker_introspector/internal/introspect"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-var Database *gorm.DB
+var GlobalDatabaseAccessor *gorm.DB
 
-func Init() {
+func InitializeDatabase() {
+	productionDatabaseURL := os.Getenv("DATABASE_URL")
 
-	var err error
+	var databaseError error
 
-	// Default to SQLite file in dev.db in project root
-	databasePath := "dev.db"
-	Database, err = gorm.Open(sqlite.Open(databasePath), &gorm.Config{})
-	if err != nil {
-		log.Fatalf("failed to connect to SQLite: %v", err)
+	if productionDatabaseURL != "" {
+		fmt.Println("Connecting to Production Database...")
+	} else {
+		// Default to local SQLite for development
+		fmt.Println("Connecting to Development Database...")
+		localStoragePath := "dev.db"
+		GlobalDatabaseAccessor, databaseError = gorm.Open(sqlite.Open(localStoragePath), &gorm.Config{})
+
+		if databaseError != nil {
+			log.Fatalf("Critical: Could not connect to local SQLite: %v", databaseError)
+		}
+		fmt.Println("Successfully connected to local SQLite at:", localStoragePath)
 	}
-	fmt.Println("connected to sqlite at", databasePath)
 
-	if err := Database.AutoMigrate(&introspect.Repository{}, &introspect.ContributorStats{}, &introspect.AnalyticsReport{}); err != nil {
-		log.Fatalf("auto migrate failed: %v", err)
+	// AutoMigrate automatically creates the tables in your DB based on your models
+	migrationError := GlobalDatabaseAccessor.AutoMigrate(
+		&introspect.Repository{},
+		&introspect.ContributorStats{},
+		&introspect.AnalyticsReport{},
+	)
+
+	if migrationError != nil {
+		log.Fatalf("Critical: Database migration failed: %v", migrationError)
 	}
-	fmt.Println("Database migrations worked")
+	fmt.Println("Database structure updated successfully!")
 }
