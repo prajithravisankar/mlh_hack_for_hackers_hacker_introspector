@@ -19,34 +19,38 @@
       </p>
 
       <div class="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
-        <div class="flex flex-col md:flex-row gap-4">
-          <input
-            type="text"
-            id="repoUrl"
-            placeholder="https://github.com/owner/repo"
-            class="flex-1 bg-gray-700 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+        <form onsubmit="return false;">
+          <div class="flex flex-col md:flex-row gap-4">
+            <input
+              type="text"
+              id="repoUrl"
+              placeholder="https://github.com/owner/repo"
+              class="flex-1 bg-gray-700 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onkeypress="if(event.key==='Enter') analyzeRepo(event)"
+            />
 
-          <input
-            type="date"
-            id="startDate"
-            class="bg-gray-700 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            title="Start Date"
-          />
-          <input
-            type="date"
-            id="endDate"
-            class="bg-gray-700 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            title="End Date"
-          />
+            <input
+              type="date"
+              id="startDate"
+              class="bg-gray-700 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              title="Start Date"
+            />
+            <input
+              type="date"
+              id="endDate"
+              class="bg-gray-700 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              title="End Date"
+            />
 
-          <button
-            onclick="analyzeRepo()"
-            class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded font-bold transition whitespace-nowrap"
-          >
-            Analyze
-          </button>
-        </div>
+            <button
+              type="button"
+              onclick="analyzeRepo(event)"
+              class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded font-bold transition whitespace-nowrap"
+            >
+              Analyze
+            </button>
+          </div>
+        </form>
         <p id="status" class="mt-2 text-sm text-yellow-400 hidden">
           Analyzing... (Counting commits manually...)
         </p>
@@ -77,7 +81,13 @@
     </div>
 
     <script>
-      async function analyzeRepo() {
+      async function analyzeRepo(event) {
+        // Prevent any default behavior that might cause page refresh
+        if (event) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+
         const url = document.getElementById("repoUrl").value;
         const startDate = document.getElementById("startDate").value;
         const endDate = document.getElementById("endDate").value;
@@ -93,6 +103,12 @@
         results.classList.add("hidden");
 
         try {
+          console.log("Sending request to backend:", {
+            repo_url: url,
+            start_date: startDate,
+            end_date: endDate,
+          });
+
           // Send URL AND Dates to Go Backend
           const response = await fetch("http://localhost:8080/api/analyze", {
             method: "POST",
@@ -104,7 +120,12 @@
             }),
           });
 
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
           const data = await response.json();
+          console.log("Received data from backend:", data);
 
           if (data.error) throw new Error(data.error);
 
@@ -112,8 +133,10 @@
           status.classList.add("hidden");
           results.classList.remove("hidden");
         } catch (err) {
+          console.error("Error during analysis:", err);
           status.innerText = "Error: " + err.message;
           status.classList.remove("hidden");
+          results.classList.add("hidden");
         }
       }
 
@@ -121,71 +144,122 @@
       let chart2 = null;
 
       function renderDashboard(data) {
+        console.log("Rendering dashboard with data:", data);
+
+        // Safely set repo info
         document.getElementById("repoName").innerText =
-          data.repo_info.full_name;
-        document.getElementById(
-          "stars"
-        ).innerText = `⭐ ${data.repo_info.stargazers_count} Stars`;
-        document.getElementById(
-          "forks"
-        ).innerText = `🍴 ${data.repo_info.forks_count} Forks`;
-        document.getElementById(
-          "issues"
-        ).innerText = `🐞 ${data.repo_info.open_issues_count} Issues`;
+          data.repo_info?.full_name || "Unknown Repository";
+        document.getElementById("stars").innerText = `⭐ ${
+          data.repo_info?.stargazers_count || 0
+        } Stars`;
+        document.getElementById("forks").innerText = `🍴 ${
+          data.repo_info?.forks_count || 0
+        } Forks`;
+        document.getElementById("issues").innerText = `🐞 ${
+          data.repo_info?.open_issues_count || 0
+        } Issues`;
 
         // 1. Language Chart
-        const fileTypes = data.file_types || {};
+        const fileTypes = data.file_types || data.repo_info?.languages || {};
         const langLabels = Object.keys(fileTypes);
         const langValues = Object.values(fileTypes);
 
-        if (chart1) chart1.destroy();
-        chart1 = new Chart(document.getElementById("langChart"), {
-          type: "doughnut",
-          data: {
-            labels: langLabels,
-            datasets: [
-              {
-                data: langValues,
-                backgroundColor: [
-                  "#3B82F6",
-                  "#F59E0B",
-                  "#10B981",
-                  "#EF4444",
-                  "#8B5CF6",
+        console.log("Language data:", { fileTypes, langLabels, langValues });
+
+        // Destroy existing chart before creating new one
+        if (chart1) {
+          chart1.destroy();
+          chart1 = null;
+        }
+
+        // Only create chart if we have data
+        if (langLabels.length > 0 && langValues.length > 0) {
+          setTimeout(() => {
+            chart1 = new Chart(document.getElementById("langChart"), {
+              type: "doughnut",
+              data: {
+                labels: langLabels,
+                datasets: [
+                  {
+                    data: langValues,
+                    backgroundColor: [
+                      "#3B82F6",
+                      "#F59E0B",
+                      "#10B981",
+                      "#EF4444",
+                      "#8B5CF6",
+                      "#EC4899",
+                      "#F97316",
+                    ],
+                  },
                 ],
               },
-            ],
-          },
-        });
+              options: {
+                responsive: true,
+                maintainAspectRatio: true,
+              },
+            });
+          }, 100);
+        } else {
+          document
+            .getElementById("langChart")
+            .getContext("2d")
+            .clearRect(0, 0, 300, 300);
+        }
 
         // 2. Contributor Chart
-        // Use the manual count data
         const contributors = data.contributors || [];
+        console.log("Contributors data:", contributors);
+
         const sortedContributors =
           contributors.length > 0
             ? contributors.sort((a, b) => b.total - a.total).slice(0, 5)
             : [];
 
-        const contribNames = sortedContributors.map((c) => c.author.login);
-        const contribCommits = sortedContributors.map((c) => c.total);
+        const contribNames = sortedContributors.map(
+          (c) => c.author?.login || "Unknown"
+        );
+        const contribCommits = sortedContributors.map((c) => c.total || 0);
 
-        if (chart2) chart2.destroy();
-        chart2 = new Chart(document.getElementById("contribChart"), {
-          type: "bar",
-          data: {
-            labels: contribNames,
-            datasets: [
-              {
-                label: "Commits in Range", // Updated label
-                data: contribCommits,
-                backgroundColor: "#8B5CF6",
-              },
-            ],
-          },
-          options: {
-            scales: { y: { beginAtZero: true } },
-          },
+        console.log("Contributor chart data:", {
+          contribNames,
+          contribCommits,
         });
+
+        // Destroy existing chart before creating new one
+        if (chart2) {
+          chart2.destroy();
+          chart2 = null;
+        }
+
+        // Only create chart if we have data
+        if (contribNames.length > 0 && contribCommits.length > 0) {
+          setTimeout(() => {
+            chart2 = new Chart(document.getElementById("contribChart"), {
+              type: "bar",
+              data: {
+                labels: contribNames,
+                datasets: [
+                  {
+                    label: "Commits in Range",
+                    data: contribCommits,
+                    backgroundColor: "#8B5CF6",
+                  },
+                ],
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: { y: { beginAtZero: true } },
+              },
+            });
+          }, 100);
+        } else {
+          document
+            .getElementById("contribChart")
+            .getContext("2d")
+            .clearRect(0, 0, 300, 300);
+        }
       }
     </script>
   </body>

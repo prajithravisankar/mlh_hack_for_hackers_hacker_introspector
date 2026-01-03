@@ -33,7 +33,6 @@ func (h *Handler) AnalyzeRepo(c *gin.Context) {
 		return
 	}
 
-	// 1. Parse URL
 	owner, repoName, err := github.ExtractOwnerAndRepo(req.RepoURL)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid GitHub URL format"})
@@ -42,27 +41,31 @@ func (h *Handler) AnalyzeRepo(c *gin.Context) {
 
 	fullName := owner + "/" + repoName
 
-	// 2. Check Cache (Database)
-	existingReport, err := h.repo.GetReportByRepoName(fullName)
-	if err == nil {
-		// Found it! Return cached version
-		c.JSON(http.StatusOK, existingReport)
-		return
+	// Only check cache if NO dates are provided.
+	// If dates are present, we must fetch fresh data to be accurate.
+	if req.StartDate == "" && req.EndDate == "" {
+		existingReport, err := h.repo.GetReportByRepoName(fullName)
+		if err == nil {
+			c.JSON(http.StatusOK, existingReport)
+			return
+		}
 	}
 
-	// 3. Not found? Fetch from GitHub
+	// Fetch fresh data
 	report, err := h.githubClient.FetchEverything(owner, repoName, req.StartDate, req.EndDate)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 4. Save to Database for next time
-	if err := h.repo.SaveReport(report); err != nil {
-		fmt.Println("Error saving to DB:", err)
+	// Save to DB (Only if it's a generic, non-dated report)
+	// We don't want to overwrite the "Master" report with a partial date-filtered one.
+	if req.StartDate == "" && req.EndDate == "" {
+		if err := h.repo.SaveReport(report); err != nil {
+			fmt.Println("Error saving to DB:", err)
+		}
 	}
 
-	// 5. Return fresh report
 	c.JSON(http.StatusOK, report)
 }
 

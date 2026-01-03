@@ -66,7 +66,7 @@ func (client *Client) FetchCommitsRaw(owner, repo, since, until string) ([]map[s
 	}
 
 	if until != "" {
-		url += fmt.Sprintf("&until=%sT23:59:59:Z", until)
+		url += fmt.Sprintf("&until=%sT23:59:59Z", until)
 	}
 
 	var allCommits []map[string]interface{}
