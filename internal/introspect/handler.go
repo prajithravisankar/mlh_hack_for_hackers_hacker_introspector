@@ -4,15 +4,18 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prajithravisankar/mlh_hack_for_hackers_hacker_introspector/internal/github"
 )
 
 type Handler struct {
 	repo *ReportRepository
+	githubClient *github.Client
 }
 
-func NewHandler(repo *ReportRepository) *Handler {
+func NewHandler(repo *ReportRepository, githubClient *github.Client) *Handler {
 	return &Handler{
 		repo: repo,
+		githubClient: githubClient,
 	}
 }
 
