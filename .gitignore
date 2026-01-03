@@ -1,1 +1,23 @@
 plan.md
+
+# Binaries for programs and plugins
+/bin/
+
+# Vendor dir
+/vendor/
+
+# Test binary
+*.test
+
+# Temporary files
+*.out
+
+# IDE/editor files
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Environment files
+.env
