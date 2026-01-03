@@ -33,9 +33,10 @@ type ContributorStats struct {
 
 // AnalyticsReport is the "Master Table" in our database.
 type AnalyticsReport struct {
-	ID           uint               `json:"id" gorm:"primaryKey"`
-	RepoInfo     Repository         `json:"repo_info" gorm:"embedded"`
-	Contributors []ContributorStats `json:"contributors" gorm:"serializer:json"`
-	FileTypes    map[string]int     `json:"file_types" gorm:"serializer:json"`
-	GeneratedAt  time.Time          `json:"generated_at"`
+	ID             uint               `json:"id" gorm:"primaryKey"`
+	RepoInfo       Repository         `json:"repo_info" gorm:"embedded"`
+	Contributors   []ContributorStats `json:"contributors" gorm:"serializer:json"`
+	FileTypes      map[string]int     `json:"file_types" gorm:"serializer:json"`
+	CommitTimeline []time.Time        `json:"commit_timeline" gorm:"serializer:json"` // <--- NEW FIELD
+	GeneratedAt    time.Time          `json:"generated_at"`
 }

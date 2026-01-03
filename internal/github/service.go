@@ -15,7 +15,7 @@ func (c *Client) FetchEverything(owner, repoName string) (*models.AnalyticsRepor
 	var wg sync.WaitGroup
 	var err1, err2, err3 error
 
-	// 1. Metadata (Keep this)
+	// 1. Metadata
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -25,7 +25,7 @@ func (c *Client) FetchEverything(owner, repoName string) (*models.AnalyticsRepor
 		}
 	}()
 
-	// 2. Languages (Keep this)
+	// 2. Languages
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -43,7 +43,7 @@ func (c *Client) FetchEverything(owner, repoName string) (*models.AnalyticsRepor
 	go func() {
 		defer wg.Done()
 
-		// A. Fetch raw list (no date filters, just last 100)
+		// A. Fetch raw list
 		rawCommits, err := c.FetchCommitsRaw(owner, repoName, "", "")
 		if err != nil {
 			fmt.Printf("Error fetching commits: %v\n", err)
@@ -53,19 +53,15 @@ func (c *Client) FetchEverything(owner, repoName string) (*models.AnalyticsRepor
 
 		fmt.Printf("Fetched %d commits\n", len(rawCommits))
 
-		// B. Process the data (Calculate our own stats)
-		// Map to store User -> Commits count
+		// B. Process the data
 		statsMap := make(map[string]int)
 		avatars := make(map[string]string)
+		var timeline []time.Time // <--- NEW: Timeline slice
 
 		for _, commit := range rawCommits {
-			// Try to get the GitHub login
+			// --- Part 1: Extract Author (Existing logic) ---
 			var login string
 			var avatar string
-
-			// GitHub API structure is weird:
-			// "author": { "login": "prajith", "avatar_url": "..." } -> This is the GitHub User
-			// "commit": { "author": { "name": "Prajith" } } -> This is the Git Metadata
 
 			if author, ok := commit["author"].(map[string]interface{}); ok && author != nil {
 				if loginVal, ok := author["login"].(string); ok {
@@ -75,13 +71,13 @@ func (c *Client) FetchEverything(owner, repoName string) (*models.AnalyticsRepor
 					avatar = avatarVal
 				}
 			} else {
-				// Fallback: If not linked to GitHub user, use the Git Name
+				// Fallback to git metadata
 				if commitData, ok := commit["commit"].(map[string]interface{}); ok {
 					if commitAuthor, ok := commitData["author"].(map[string]interface{}); ok {
 						if nameVal, ok := commitAuthor["name"].(string); ok {
 							login = nameVal
 						}
-						avatar = "" // No avatar for unlinked users
+						avatar = ""
 					}
 				}
 			}
@@ -92,11 +88,22 @@ func (c *Client) FetchEverything(owner, repoName string) (*models.AnalyticsRepor
 					avatars[login] = avatar
 				}
 			}
+
+			// --- Part 2: Extract Date for Heatmap (NEW) ---
+			if commitData, ok := commit["commit"].(map[string]interface{}); ok {
+				if authorData, ok := commitData["author"].(map[string]interface{}); ok {
+					if dateStr, ok := authorData["date"].(string); ok {
+						// Parse ISO 8601 / RFC3339 date (e.g. "2024-01-01T12:00:00Z")
+						if t, err := time.Parse(time.RFC3339, dateStr); err == nil {
+							timeline = append(timeline, t)
+						}
+					}
+				}
+			}
 		}
 
-		fmt.Printf("Processed contributors: %+v\n", statsMap)
-
-		// C. Convert Map to our Struct
+		// C. Save Data to Report
+		// Contributors
 		for login, count := range statsMap {
 			contrib := models.ContributorStats{
 				Total: count,
@@ -105,6 +112,9 @@ func (c *Client) FetchEverything(owner, repoName string) (*models.AnalyticsRepor
 			contrib.Author.AvatarURL = avatars[login]
 			report.Contributors = append(report.Contributors, contrib)
 		}
+
+		// Timeline
+		report.CommitTimeline = timeline // <--- NEW: Save timeline to report
 	}()
 
 	wg.Wait()
@@ -122,7 +132,6 @@ func (c *Client) FetchEverything(owner, repoName string) (*models.AnalyticsRepor
 
 	report.RepoInfo.FullName = fmt.Sprintf("%s/%s", owner, repoName)
 
-	// Ensure FileTypes is never nil
 	if report.RepoInfo.Languages != nil {
 		report.FileTypes = report.RepoInfo.Languages
 	} else {
