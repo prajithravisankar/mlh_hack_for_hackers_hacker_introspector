@@ -57,3 +57,31 @@ func ExtractOwnerAndRepo(repoURL string) (string, string, error) {
 
 	return parts[1], parts[2], nil
 }
+
+func (client *Client) FetchCommitsRaw(owner, repo, since, until string) ([]map[string]interface{}, error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/commits?per_page=100", owner, repo)
+
+	if since != "" {
+		url += fmt.Sprintf("&since=%sT00:00:00Z", since)
+	}
+
+	if until != "" {
+		url += fmt.Sprintf("&until=%sT23:59:59:Z", until)
+	}
+
+	var allCommits []map[string]interface{}
+
+	for url != "" {
+		var pageCommits []map[string]interface{}
+
+		if err := client.get(url, &pageCommits); err != nil {
+			return nil, err
+		}
+
+		allCommits = append(allCommits, pageCommits...)
+
+		break // for mvp no more than 100 commits
+	}
+
+	return allCommits, nil
+}

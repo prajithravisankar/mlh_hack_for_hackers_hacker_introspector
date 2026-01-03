@@ -19,22 +19,36 @@
       </p>
 
       <div class="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
-        <div class="flex gap-4">
+        <div class="flex flex-col md:flex-row gap-4">
           <input
             type="text"
             id="repoUrl"
             placeholder="https://github.com/owner/repo"
             class="flex-1 bg-gray-700 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+
+          <input
+            type="date"
+            id="startDate"
+            class="bg-gray-700 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            title="Start Date"
+          />
+          <input
+            type="date"
+            id="endDate"
+            class="bg-gray-700 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            title="End Date"
+          />
+
           <button
             onclick="analyzeRepo()"
-            class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded font-bold transition"
+            class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded font-bold transition whitespace-nowrap"
           >
             Analyze
           </button>
         </div>
         <p id="status" class="mt-2 text-sm text-yellow-400 hidden">
-          Analyzing... this may take a few seconds...
+          Analyzing... (Counting commits manually...)
         </p>
       </div>
 
@@ -65,6 +79,9 @@
     <script>
       async function analyzeRepo() {
         const url = document.getElementById("repoUrl").value;
+        const startDate = document.getElementById("startDate").value;
+        const endDate = document.getElementById("endDate").value;
+
         const status = document.getElementById("status");
         const results = document.getElementById("results");
 
@@ -72,15 +89,19 @@
 
         // UI Reset
         status.classList.remove("hidden");
-        status.innerText = "Analyzing... (Fetching from GitHub)";
+        status.innerText = "Analyzing... (Fetching commits from GitHub...)";
         results.classList.add("hidden");
 
         try {
-          // CALL YOUR GO BACKEND
+          // Send URL AND Dates to Go Backend
           const response = await fetch("http://localhost:8080/api/analyze", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ repo_url: url }),
+            body: JSON.stringify({
+              repo_url: url,
+              start_date: startDate, // Send empty string if user didn't pick date
+              end_date: endDate,
+            }),
           });
 
           const data = await response.json();
@@ -100,7 +121,6 @@
       let chart2 = null;
 
       function renderDashboard(data) {
-        // 1. Basic Info
         document.getElementById("repoName").innerText =
           data.repo_info.full_name;
         document.getElementById(
@@ -113,8 +133,7 @@
           "issues"
         ).innerText = `🐞 ${data.repo_info.open_issues_count} Issues`;
 
-        // 2. Language Chart (Pie)
-        // SAFETY CHECK: Ensure file_types exists, otherwise use empty object {}
+        // 1. Language Chart
         const fileTypes = data.file_types || {};
         const langLabels = Object.keys(fileTypes);
         const langValues = Object.values(fileTypes);
@@ -139,11 +158,9 @@
           },
         });
 
-        // 3. Contributor Chart (Bar)
-        // SAFETY CHECK: If contributors is null, use empty array []
+        // 2. Contributor Chart
+        // Use the manual count data
         const contributors = data.contributors || [];
-
-        // Only sort and slice if we actually have data
         const sortedContributors =
           contributors.length > 0
             ? contributors.sort((a, b) => b.total - a.total).slice(0, 5)
@@ -159,16 +176,14 @@
             labels: contribNames,
             datasets: [
               {
-                label: "Total Commits",
+                label: "Commits in Range", // Updated label
                 data: contribCommits,
                 backgroundColor: "#8B5CF6",
               },
             ],
           },
           options: {
-            scales: {
-              y: { beginAtZero: true },
-            },
+            scales: { y: { beginAtZero: true } },
           },
         });
       }

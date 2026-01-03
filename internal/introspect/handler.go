@@ -21,7 +21,9 @@ func NewHandler(repo *ReportRepository, githubClient *github.Client) *Handler {
 }
 
 type AnalyzeRequest struct {
-	RepoURL string `json:"repo_url" binding:"required,url"`
+	RepoURL   string `json:"repo_url" binding:"required,url"`
+	StartDate string `json:"start_date"`
+	EndDate   string `json:"end_date"`
 }
 
 func (h *Handler) AnalyzeRepo(c *gin.Context) {
@@ -49,7 +51,7 @@ func (h *Handler) AnalyzeRepo(c *gin.Context) {
 	}
 
 	// 3. Not found? Fetch from GitHub
-	report, err := h.githubClient.FetchEverything(owner, repoName)
+	report, err := h.githubClient.FetchEverything(owner, repoName, req.StartDate, req.EndDate)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
