@@ -1,45 +1,18 @@
 "use client";
 
-// Generate dummy data for 3 days (72 hours) - hours of day (0-23) vs days
-const generateHeatmapData = () => {
-  const data = [];
-  const startDate = new Date(2026, 0, 1); // January 1, 2026
-
-  // Generate data for 3 days
-  for (let day = 0; day < 3; day++) {
-    for (let hour = 0; hour < 24; hour++) {
-      const date = new Date(startDate);
-      date.setDate(date.getDate() + day);
-      date.setHours(hour);
-
-      // Random commit count (0-10)
-      const count = Math.floor(Math.random() * 11);
-
-      data.push({
-        date: date.toISOString(),
-        count: count,
-        day: day,
-        hour: hour,
-      });
-    }
-  }
-  return data;
-};
-
-const heatmapData = generateHeatmapData();
+// Static dummy data for 3 days (72 hours) - hours of day (0-23) vs days
+// Represents commit patterns during a typical 72-hour hackathon
+const staticHeatmapGrid = [
+  // Day 1: Starting slow, building momentum
+  [2, 0, 1, 0, 0, 3, 5, 8, 6, 7, 8, 10, 7, 6, 5, 4, 2, 1, 3, 2, 5, 6, 4, 2],
+  // Day 2: Peak activity during working hours
+  [1, 0, 0, 2, 1, 0, 3, 5, 8, 9, 10, 8, 9, 7, 6, 4, 3, 2, 4, 6, 7, 8, 5, 3],
+  // Day 3: Final push, intense activity
+  [0, 1, 0, 2, 3, 4, 2, 6, 8, 9, 10, 9, 8, 7, 5, 6, 7, 5, 3, 4, 6, 8, 9, 7],
+];
 
 export default function CommitHeatmap() {
   const days = ["Day 1", "Day 2", "Day 3"];
-  const hours = Array.from({ length: 24 }, (_, i) => i);
-
-  // Organize data by day and hour
-  const grid: number[][] = Array(3)
-    .fill(0)
-    .map(() => Array(24).fill(0));
-
-  heatmapData.forEach((item) => {
-    grid[item.day][item.hour] = item.count;
-  });
 
   const getColor = (count: number) => {
     if (count === 0) return "bg-zinc-100 dark:bg-zinc-800";
@@ -72,7 +45,7 @@ export default function CommitHeatmap() {
                   </div>
                 ))}
               </div>
-              {grid.map((row, dayIdx) => (
+              {staticHeatmapGrid.map((row, dayIdx) => (
                 <div key={dayIdx} className="flex gap-1 mb-1">
                   {row.map((count, hourIdx) => (
                     <div
