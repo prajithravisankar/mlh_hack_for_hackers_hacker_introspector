@@ -10,37 +10,27 @@ import {
   Legend,
   Tooltip,
 } from "recharts";
+import { RadarMetric } from "@/types/charts";
 
-const data = [
-  {
-    metric: "Consistency",
-    value: 85,
-    fullMark: 100,
-  },
-  {
-    metric: "Insomnia",
-    value: 70,
-    fullMark: 100,
-  },
-  {
-    metric: "Bus Factor",
-    value: 60,
-    fullMark: 100,
-  },
-  {
-    metric: "Volume",
-    value: 90,
-    fullMark: 100,
-  },
-];
+interface Props {
+  data: RadarMetric[];
+}
 
-export default function ConsistencyRadarChart() {
+export default function ConsistencyRadarChart({ data }: Props) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="w-full h-[400px] bg-white dark:bg-zinc-900 rounded-lg p-6 shadow-sm flex items-center justify-center">
+        <p className="text-zinc-500">No metrics data available</p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-[400px] bg-white dark:bg-zinc-900 rounded-lg p-6 shadow-sm">
       <h3 className="text-xl font-semibold mb-4 text-zinc-900 dark:text-zinc-100">
         Project Health Metrics
       </h3>
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="60%">
         <RadarChart data={data}>
           <PolarGrid />
           <PolarAngleAxis dataKey="metric" />
@@ -56,18 +46,21 @@ export default function ConsistencyRadarChart() {
           <Legend />
         </RadarChart>
       </ResponsiveContainer>
-      <div className="mt-4 text-sm text-zinc-600 dark:text-zinc-400 space-y-1">
+      <div className="mt-2 text-sm text-zinc-600 dark:text-zinc-400 space-y-1">
         <p>
-          <strong>Consistency:</strong> Regular commit patterns
+          <strong>Consistency:</strong> Regular commit patterns (higher = more
+          even distribution)
         </p>
         <p>
-          <strong>Insomnia:</strong> Late night/early morning activity
+          <strong>Insomnia:</strong> Late night/early morning activity (10pm-6am
+          UTC)
         </p>
         <p>
-          <strong>Bus Factor:</strong> Knowledge distribution across team
+          <strong>Bus Factor:</strong> Knowledge distribution (higher = less
+          dependency on one person)
         </p>
         <p>
-          <strong>Volume:</strong> Total contribution output
+          <strong>Volume:</strong> Average commits per day
         </p>
       </div>
     </div>

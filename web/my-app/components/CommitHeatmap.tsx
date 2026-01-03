@@ -1,18 +1,13 @@
 "use client";
 
-// Static dummy data for 3 days (72 hours) - hours of day (0-23) vs days
-// Represents commit patterns during a typical 72-hour hackathon
-const staticHeatmapGrid = [
-  // Day 1: Starting slow, building momentum
-  [2, 0, 1, 0, 0, 3, 5, 8, 6, 7, 8, 10, 7, 6, 5, 4, 2, 1, 3, 2, 5, 6, 4, 2],
-  // Day 2: Peak activity during working hours
-  [1, 0, 0, 2, 1, 0, 3, 5, 8, 9, 10, 8, 9, 7, 6, 4, 3, 2, 4, 6, 7, 8, 5, 3],
-  // Day 3: Final push, intense activity
-  [0, 1, 0, 2, 3, 4, 2, 6, 8, 9, 10, 9, 8, 7, 5, 6, 7, 5, 3, 4, 6, 8, 9, 7],
-];
+interface Props {
+  data: number[][]; // Grid of [days][hours] with commit counts
+  dayLabels?: string[];
+}
 
-export default function CommitHeatmap() {
-  const days = ["Day 1", "Day 2", "Day 3"];
+export default function CommitHeatmap({ data, dayLabels }: Props) {
+  const defaultLabels = data.map((_, i) => `Day ${i + 1}`);
+  const labels = dayLabels || defaultLabels;
 
   const getColor = (count: number) => {
     if (count === 0) return "bg-zinc-100 dark:bg-zinc-800";
@@ -22,18 +17,26 @@ export default function CommitHeatmap() {
     return "bg-blue-800 dark:bg-blue-300";
   };
 
+  if (!data || data.length === 0) {
+    return (
+      <div className="w-full bg-white dark:bg-zinc-900 rounded-lg p-6 shadow-sm flex items-center justify-center h-[200px]">
+        <p className="text-zinc-500">No heatmap data available</p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full bg-white dark:bg-zinc-900 rounded-lg p-6 shadow-sm">
       <h3 className="text-xl font-semibold mb-4 text-zinc-900 dark:text-zinc-100">
-        Commit Heatmap - Days vs Hours
+        Commit Heatmap - Activity by Hour
       </h3>
       <div className="overflow-x-auto">
         <div className="inline-block min-w-full">
           <div className="flex gap-1">
             <div className="flex flex-col justify-around pr-2 text-xs text-zinc-600 dark:text-zinc-400">
-              {days.map((day, i) => (
+              {labels.map((label, i) => (
                 <div key={i} className="h-6 flex items-center">
-                  {day}
+                  {label}
                 </div>
               ))}
             </div>
@@ -45,7 +48,7 @@ export default function CommitHeatmap() {
                   </div>
                 ))}
               </div>
-              {staticHeatmapGrid.map((row, dayIdx) => (
+              {data.map((row, dayIdx) => (
                 <div key={dayIdx} className="flex gap-1 mb-1">
                   {row.map((count, hourIdx) => (
                     <div
@@ -53,9 +56,7 @@ export default function CommitHeatmap() {
                       className={`w-6 h-6 rounded ${getColor(
                         count
                       )} transition-colors cursor-pointer hover:ring-2 hover:ring-blue-500`}
-                      title={`Day ${
-                        dayIdx + 1
-                      }, Hour ${hourIdx}: ${count} commits`}
+                      title={`${labels[dayIdx]}, Hour ${hourIdx}:00 - ${count} commits`}
                     />
                   ))}
                 </div>

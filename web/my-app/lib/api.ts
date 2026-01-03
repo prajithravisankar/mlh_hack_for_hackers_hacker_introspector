@@ -1,4 +1,5 @@
 // API client for backend communication
+import { AnalyticsReport } from "@/types/charts";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
@@ -22,51 +23,37 @@ async function fetchAPI<T>(
   });
 
   if (!response.ok) {
-    throw new ApiError(response.status, `API Error: ${response.statusText}`);
+    const errorText = await response.text();
+    throw new ApiError(
+      response.status,
+      errorText || `API Error: ${response.statusText}`
+    );
   }
 
   return response.json();
 }
 
-// API functions for each chart type
+// Main API function - matches the backend endpoint
+export async function analyzeRepository(
+  repoUrl: string
+): Promise<AnalyticsReport> {
+  return fetchAPI<AnalyticsReport>("/api/analyze", {
+    method: "POST",
+    body: JSON.stringify({ repo_url: repoUrl }), // Match backend's expected field name
+  });
+}
+
+// Get cached report by owner/repo
+export async function getReport(
+  owner: string,
+  repo: string
+): Promise<AnalyticsReport> {
+  return fetchAPI<AnalyticsReport>(`/api/report/${owner}/${repo}`);
+}
+
 export const api = {
-  // Analyze a repository
-  analyzeRepository: async (repoUrl: string) => {
-    return fetchAPI("/api/analyze", {
-      method: "POST",
-      body: JSON.stringify({ repoUrl }),
-    });
-  },
-
-  // Get language distribution
-  getLanguages: async (repoUrl: string) => {
-    return fetchAPI(`/api/languages?repo=${encodeURIComponent(repoUrl)}`);
-  },
-
-  // Get contributor statistics
-  getContributors: async (repoUrl: string) => {
-    return fetchAPI(`/api/contributors?repo=${encodeURIComponent(repoUrl)}`);
-  },
-
-  // Get project pulse (time-series commits)
-  getProjectPulse: async (repoUrl: string) => {
-    return fetchAPI(`/api/pulse?repo=${encodeURIComponent(repoUrl)}`);
-  },
-
-  // Get heatmap data
-  getHeatmapData: async (repoUrl: string) => {
-    return fetchAPI(`/api/heatmap?repo=${encodeURIComponent(repoUrl)}`);
-  },
-
-  // Get hourly activity
-  getHourlyActivity: async (repoUrl: string) => {
-    return fetchAPI(`/api/activity?repo=${encodeURIComponent(repoUrl)}`);
-  },
-
-  // Get health metrics
-  getHealthMetrics: async (repoUrl: string) => {
-    return fetchAPI(`/api/metrics?repo=${encodeURIComponent(repoUrl)}`);
-  },
+  analyzeRepository,
+  getReport,
 };
 
 export default api;
