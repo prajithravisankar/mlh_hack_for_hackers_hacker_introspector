@@ -8,6 +8,7 @@ import CommitHeatmap from "@/components/CommitHeatmap";
 import CommitHistogram from "@/components/CommitHistogram";
 import ConsistencyRadarChart from "@/components/ConsistencyRadarChart";
 import RepoInfoCard from "@/components/RepoInfoCard";
+import MoreInsights from "@/components/MoreInsights";
 import { analyzeRepository } from "@/lib/api";
 import {
   AnalyticsReport,
@@ -240,6 +241,9 @@ export default function Home() {
                 <ConsistencyRadarChart data={healthMetrics} />
               </div>
             </div>
+
+            {/* More Insights Section */}
+            <MoreInsights repoName={report.repo_info.full_name} />
           </div>
         )}
 
