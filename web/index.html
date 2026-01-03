@@ -19,40 +19,24 @@
       </p>
 
       <div class="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
-        <form onsubmit="return false;">
-          <div class="flex flex-col md:flex-row gap-4">
-            <input
-              type="text"
-              id="repoUrl"
-              placeholder="https://github.com/owner/repo"
-              class="flex-1 bg-gray-700 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onkeypress="if(event.key==='Enter') analyzeRepo(event)"
-            />
+        <div class="flex flex-col md:flex-row gap-4">
+          <input
+            type="text"
+            id="repoUrl"
+            placeholder="https://github.com/owner/repo"
+            class="flex-1 bg-gray-700 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
 
-            <input
-              type="date"
-              id="startDate"
-              class="bg-gray-700 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              title="Start Date"
-            />
-            <input
-              type="date"
-              id="endDate"
-              class="bg-gray-700 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              title="End Date"
-            />
-
-            <button
-              type="button"
-              onclick="analyzeRepo(event)"
-              class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded font-bold transition whitespace-nowrap"
-            >
-              Analyze
-            </button>
-          </div>
-        </form>
+          <button
+            type="button"
+            id="analyzeBtn"
+            class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded font-bold transition whitespace-nowrap"
+          >
+            Analyze
+          </button>
+        </div>
         <p id="status" class="mt-2 text-sm text-yellow-400 hidden">
-          Analyzing... (Counting commits manually...)
+          Analyzing... (Fetching recent commits from GitHub...)
         </p>
       </div>
 
@@ -81,43 +65,52 @@
     </div>
 
     <script>
-      async function analyzeRepo(event) {
-        // Prevent any default behavior that might cause page refresh
-        if (event) {
-          event.preventDefault();
-          event.stopPropagation();
-        }
+      let chart1 = null;
+      let chart2 = null;
 
+      // Add event listeners when DOM is ready
+      document.addEventListener("DOMContentLoaded", function () {
+        const analyzeBtn = document.getElementById("analyzeBtn");
+        const repoUrlInput = document.getElementById("repoUrl");
+
+        analyzeBtn.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          analyzeRepo();
+        });
+
+        repoUrlInput.addEventListener("keypress", function (e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            e.stopPropagation();
+            analyzeRepo();
+          }
+        });
+      });
+
+      async function analyzeRepo() {
         const url = document.getElementById("repoUrl").value;
-        const startDate = document.getElementById("startDate").value;
-        const endDate = document.getElementById("endDate").value;
-
         const status = document.getElementById("status");
         const results = document.getElementById("results");
 
-        if (!url) return alert("Please enter a URL");
+        if (!url) {
+          alert("Please enter a GitHub repository URL");
+          return;
+        }
 
         // UI Reset
         status.classList.remove("hidden");
-        status.innerText = "Analyzing... (Fetching commits from GitHub...)";
+        status.innerText =
+          "Analyzing... (Fetching recent commits from GitHub...)";
         results.classList.add("hidden");
 
         try {
-          console.log("Sending request to backend:", {
-            repo_url: url,
-            start_date: startDate,
-            end_date: endDate,
-          });
+          console.log("Sending request to backend:", { repo_url: url });
 
-          // Send URL AND Dates to Go Backend
           const response = await fetch("http://localhost:8080/api/analyze", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              repo_url: url,
-              start_date: startDate, // Send empty string if user didn't pick date
-              end_date: endDate,
-            }),
+            body: JSON.stringify({ repo_url: url }),
           });
 
           if (!response.ok) {
@@ -127,7 +120,9 @@
           const data = await response.json();
           console.log("Received data from backend:", data);
 
-          if (data.error) throw new Error(data.error);
+          if (data.error) {
+            throw new Error(data.error);
+          }
 
           renderDashboard(data);
           status.classList.add("hidden");
@@ -140,125 +135,120 @@
         }
       }
 
-      let chart1 = null;
-      let chart2 = null;
-
       function renderDashboard(data) {
         console.log("Rendering dashboard with data:", data);
 
-        // Safely set repo info
-        document.getElementById("repoName").innerText =
-          data.repo_info?.full_name || "Unknown Repository";
-        document.getElementById("stars").innerText = `⭐ ${
-          data.repo_info?.stargazers_count || 0
-        } Stars`;
-        document.getElementById("forks").innerText = `🍴 ${
-          data.repo_info?.forks_count || 0
-        } Forks`;
-        document.getElementById("issues").innerText = `🐞 ${
-          data.repo_info?.open_issues_count || 0
-        } Issues`;
+        try {
+          // Safely set repo info
+          document.getElementById("repoName").innerText =
+            data.repo_info?.full_name || "Unknown Repository";
+          document.getElementById("stars").innerText = `⭐ ${
+            data.repo_info?.stargazers_count || 0
+          } Stars`;
+          document.getElementById("forks").innerText = `🍴 ${
+            data.repo_info?.forks_count || 0
+          } Forks`;
+          document.getElementById("issues").innerText = `🐞 ${
+            data.repo_info?.open_issues_count || 0
+          } Issues`;
 
-        // 1. Language Chart
-        const fileTypes = data.file_types || data.repo_info?.languages || {};
-        const langLabels = Object.keys(fileTypes);
-        const langValues = Object.values(fileTypes);
+          // 1. Language Chart
+          const fileTypes = data.file_types || data.repo_info?.languages || {};
+          const langLabels = Object.keys(fileTypes);
+          const langValues = Object.values(fileTypes);
 
-        console.log("Language data:", { fileTypes, langLabels, langValues });
+          console.log("Language data:", { fileTypes, langLabels, langValues });
 
-        // Destroy existing chart before creating new one
-        if (chart1) {
-          chart1.destroy();
-          chart1 = null;
-        }
+          // Destroy existing chart
+          if (chart1) {
+            chart1.destroy();
+            chart1 = null;
+          }
 
-        // Only create chart if we have data
-        if (langLabels.length > 0 && langValues.length > 0) {
-          setTimeout(() => {
-            chart1 = new Chart(document.getElementById("langChart"), {
-              type: "doughnut",
-              data: {
-                labels: langLabels,
-                datasets: [
-                  {
-                    data: langValues,
-                    backgroundColor: [
-                      "#3B82F6",
-                      "#F59E0B",
-                      "#10B981",
-                      "#EF4444",
-                      "#8B5CF6",
-                      "#EC4899",
-                      "#F97316",
-                    ],
-                  },
-                ],
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: true,
-              },
-            });
-          }, 100);
-        } else {
-          document
-            .getElementById("langChart")
-            .getContext("2d")
-            .clearRect(0, 0, 300, 300);
-        }
+          // Only create chart if we have data
+          if (langLabels.length > 0 && langValues.length > 0) {
+            const ctx1 = document.getElementById("langChart");
+            if (ctx1) {
+              chart1 = new Chart(ctx1, {
+                type: "doughnut",
+                data: {
+                  labels: langLabels,
+                  datasets: [
+                    {
+                      data: langValues,
+                      backgroundColor: [
+                        "#3B82F6",
+                        "#F59E0B",
+                        "#10B981",
+                        "#EF4444",
+                        "#8B5CF6",
+                        "#EC4899",
+                        "#F97316",
+                      ],
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: true,
+                },
+              });
+            }
+          }
 
-        // 2. Contributor Chart
-        const contributors = data.contributors || [];
-        console.log("Contributors data:", contributors);
+          // 2. Contributor Chart
+          const contributors = data.contributors || [];
+          console.log("Contributors data:", contributors);
 
-        const sortedContributors =
-          contributors.length > 0
-            ? contributors.sort((a, b) => b.total - a.total).slice(0, 5)
-            : [];
+          const sortedContributors =
+            contributors.length > 0
+              ? contributors.sort((a, b) => b.total - a.total).slice(0, 5)
+              : [];
 
-        const contribNames = sortedContributors.map(
-          (c) => c.author?.login || "Unknown"
-        );
-        const contribCommits = sortedContributors.map((c) => c.total || 0);
+          const contribNames = sortedContributors.map(
+            (c) => c.author?.login || "Unknown"
+          );
+          const contribCommits = sortedContributors.map((c) => c.total || 0);
 
-        console.log("Contributor chart data:", {
-          contribNames,
-          contribCommits,
-        });
+          console.log("Contributor chart data:", {
+            contribNames,
+            contribCommits,
+          });
 
-        // Destroy existing chart before creating new one
-        if (chart2) {
-          chart2.destroy();
-          chart2 = null;
-        }
+          // Destroy existing chart
+          if (chart2) {
+            chart2.destroy();
+            chart2 = null;
+          }
 
-        // Only create chart if we have data
-        if (contribNames.length > 0 && contribCommits.length > 0) {
-          setTimeout(() => {
-            chart2 = new Chart(document.getElementById("contribChart"), {
-              type: "bar",
-              data: {
-                labels: contribNames,
-                datasets: [
-                  {
-                    label: "Commits in Range",
-                    data: contribCommits,
-                    backgroundColor: "#8B5CF6",
-                  },
-                ],
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                scales: { y: { beginAtZero: true } },
-              },
-            });
-          }, 100);
-        } else {
-          document
-            .getElementById("contribChart")
-            .getContext("2d")
-            .clearRect(0, 0, 300, 300);
+          // Only create chart if we have data
+          if (contribNames.length > 0 && contribCommits.length > 0) {
+            const ctx2 = document.getElementById("contribChart");
+            if (ctx2) {
+              chart2 = new Chart(ctx2, {
+                type: "bar",
+                data: {
+                  labels: contribNames,
+                  datasets: [
+                    {
+                      label: "Recent Commits (Last 100)",
+                      data: contribCommits,
+                      backgroundColor: "#8B5CF6",
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: true,
+                  scales: { y: { beginAtZero: true } },
+                },
+              });
+            }
+          }
+
+          console.log("Dashboard rendered successfully");
+        } catch (error) {
+          console.error("Error rendering dashboard:", error);
         }
       }
     </script>

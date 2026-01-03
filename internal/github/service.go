@@ -8,7 +8,7 @@ import (
 	"github.com/prajithravisankar/mlh_hack_for_hackers_hacker_introspector/internal/models"
 )
 
-func (c *Client) FetchEverything(owner, repoName, startDate, endDate string) (*models.AnalyticsReport, error) {
+func (c *Client) FetchEverything(owner, repoName string) (*models.AnalyticsReport, error) {
 	baseURL := fmt.Sprintf("https://api.github.com/repos/%s/%s", owner, repoName)
 	report := &models.AnalyticsReport{GeneratedAt: time.Now()}
 
@@ -17,7 +17,7 @@ func (c *Client) FetchEverything(owner, repoName, startDate, endDate string) (*m
 
 	// 1. Metadata (Keep this)
 	wg.Add(1)
-	go func() { 
+	go func() {
 		defer wg.Done()
 		err1 = c.get(baseURL, &report.RepoInfo)
 		if err1 != nil {
@@ -27,7 +27,7 @@ func (c *Client) FetchEverything(owner, repoName, startDate, endDate string) (*m
 
 	// 2. Languages (Keep this)
 	wg.Add(1)
-	go func() { 
+	go func() {
 		defer wg.Done()
 		err2 = c.get(baseURL+"/languages", &report.RepoInfo.Languages)
 		if err2 != nil {
@@ -38,13 +38,13 @@ func (c *Client) FetchEverything(owner, repoName, startDate, endDate string) (*m
 		}
 	}()
 
-	// 3. COMMITS (The New "Manual Labor" Logic)
+	// 3. COMMITS (Always fetch most recent 100 commits for hackathon repos)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
-		// A. Fetch raw list
-		rawCommits, err := c.FetchCommitsRaw(owner, repoName, startDate, endDate)
+		// A. Fetch raw list (no date filters, just last 100)
+		rawCommits, err := c.FetchCommitsRaw(owner, repoName, "", "")
 		if err != nil {
 			fmt.Printf("Error fetching commits: %v\n", err)
 			err3 = err
@@ -121,7 +121,7 @@ func (c *Client) FetchEverything(owner, repoName, startDate, endDate string) (*m
 	}
 
 	report.RepoInfo.FullName = fmt.Sprintf("%s/%s", owner, repoName)
-	
+
 	// Ensure FileTypes is never nil
 	if report.RepoInfo.Languages != nil {
 		report.FileTypes = report.RepoInfo.Languages

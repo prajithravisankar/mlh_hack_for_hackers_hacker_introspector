@@ -21,9 +21,7 @@ func NewHandler(repo *ReportRepository, githubClient *github.Client) *Handler {
 }
 
 type AnalyzeRequest struct {
-	RepoURL   string `json:"repo_url" binding:"required,url"`
-	StartDate string `json:"start_date"`
-	EndDate   string `json:"end_date"`
+	RepoURL string `json:"repo_url" binding:"required,url"`
 }
 
 func (h *Handler) AnalyzeRepo(c *gin.Context) {
@@ -41,29 +39,25 @@ func (h *Handler) AnalyzeRepo(c *gin.Context) {
 
 	fullName := owner + "/" + repoName
 
-	// Only check cache if NO dates are provided.
-	// If dates are present, we must fetch fresh data to be accurate.
-	if req.StartDate == "" && req.EndDate == "" {
-		existingReport, err := h.repo.GetReportByRepoName(fullName)
-		if err == nil {
-			c.JSON(http.StatusOK, existingReport)
-			return
-		}
+	// Check cache first
+	existingReport, err := h.repo.GetReportByRepoName(fullName)
+	if err == nil {
+		fmt.Println("Returning cached report for", fullName)
+		c.JSON(http.StatusOK, existingReport)
+		return
 	}
 
-	// Fetch fresh data
-	report, err := h.githubClient.FetchEverything(owner, repoName, req.StartDate, req.EndDate)
+	// Fetch fresh data (always fetches last 100 commits)
+	fmt.Println("Fetching fresh data for", fullName)
+	report, err := h.githubClient.FetchEverything(owner, repoName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Save to DB (Only if it's a generic, non-dated report)
-	// We don't want to overwrite the "Master" report with a partial date-filtered one.
-	if req.StartDate == "" && req.EndDate == "" {
-		if err := h.repo.SaveReport(report); err != nil {
-			fmt.Println("Error saving to DB:", err)
-		}
+	// Save to DB
+	if err := h.repo.SaveReport(report); err != nil {
+		fmt.Println("Error saving to DB:", err)
 	}
 
 	c.JSON(http.StatusOK, report)
