@@ -1,10 +1,177 @@
-<!-- TODO: need to complete index.html after backend -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>dummmy!</title>
+    <title>Hacker Introspector</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
-  <body></body>
+  <body class="bg-gray-900 text-white min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+      <h1
+        class="text-4xl font-bold text-center mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600"
+      >
+        Hacker Introspector
+      </h1>
+      <p class="text-center text-gray-400 mb-8">
+        Reveal the truth behind the code.
+      </p>
+
+      <div class="bg-gray-800 p-6 rounded-lg shadow-lg mb-8">
+        <div class="flex gap-4">
+          <input
+            type="text"
+            id="repoUrl"
+            placeholder="https://github.com/owner/repo"
+            class="flex-1 bg-gray-700 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            onclick="analyzeRepo()"
+            class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded font-bold transition"
+          >
+            Analyze
+          </button>
+        </div>
+        <p id="status" class="mt-2 text-sm text-yellow-400 hidden">
+          Analyzing... this may take a few seconds...
+        </p>
+      </div>
+
+      <div id="results" class="hidden space-y-8">
+        <div class="bg-gray-800 p-6 rounded-lg">
+          <h2 id="repoName" class="text-2xl font-bold"></h2>
+          <div class="flex gap-4 mt-2 text-gray-400">
+            <span id="stars"></span>
+            <span id="forks"></span>
+            <span id="issues"></span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div class="bg-gray-800 p-4 rounded-lg">
+            <h3 class="text-xl font-bold mb-4 text-center">Tech Stack</h3>
+            <canvas id="langChart"></canvas>
+          </div>
+
+          <div class="bg-gray-800 p-4 rounded-lg">
+            <h3 class="text-xl font-bold mb-4 text-center">Top Contributors</h3>
+            <canvas id="contribChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      async function analyzeRepo() {
+        const url = document.getElementById("repoUrl").value;
+        const status = document.getElementById("status");
+        const results = document.getElementById("results");
+
+        if (!url) return alert("Please enter a URL");
+
+        // UI Reset
+        status.classList.remove("hidden");
+        status.innerText = "Analyzing... (Fetching from GitHub)";
+        results.classList.add("hidden");
+
+        try {
+          // CALL YOUR GO BACKEND
+          const response = await fetch("http://localhost:8080/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ repo_url: url }),
+          });
+
+          const data = await response.json();
+
+          if (data.error) throw new Error(data.error);
+
+          renderDashboard(data);
+          status.classList.add("hidden");
+          results.classList.remove("hidden");
+        } catch (err) {
+          status.innerText = "Error: " + err.message;
+          status.classList.remove("hidden");
+        }
+      }
+
+      let chart1 = null;
+      let chart2 = null;
+
+      function renderDashboard(data) {
+        // 1. Basic Info
+        document.getElementById("repoName").innerText =
+          data.repo_info.full_name;
+        document.getElementById(
+          "stars"
+        ).innerText = `⭐ ${data.repo_info.stargazers_count} Stars`;
+        document.getElementById(
+          "forks"
+        ).innerText = `🍴 ${data.repo_info.forks_count} Forks`;
+        document.getElementById(
+          "issues"
+        ).innerText = `🐞 ${data.repo_info.open_issues_count} Issues`;
+
+        // 2. Language Chart (Pie)
+        // SAFETY CHECK: Ensure file_types exists, otherwise use empty object {}
+        const fileTypes = data.file_types || {};
+        const langLabels = Object.keys(fileTypes);
+        const langValues = Object.values(fileTypes);
+
+        if (chart1) chart1.destroy();
+        chart1 = new Chart(document.getElementById("langChart"), {
+          type: "doughnut",
+          data: {
+            labels: langLabels,
+            datasets: [
+              {
+                data: langValues,
+                backgroundColor: [
+                  "#3B82F6",
+                  "#F59E0B",
+                  "#10B981",
+                  "#EF4444",
+                  "#8B5CF6",
+                ],
+              },
+            ],
+          },
+        });
+
+        // 3. Contributor Chart (Bar)
+        // SAFETY CHECK: If contributors is null, use empty array []
+        const contributors = data.contributors || [];
+
+        // Only sort and slice if we actually have data
+        const sortedContributors =
+          contributors.length > 0
+            ? contributors.sort((a, b) => b.total - a.total).slice(0, 5)
+            : [];
+
+        const contribNames = sortedContributors.map((c) => c.author.login);
+        const contribCommits = sortedContributors.map((c) => c.total);
+
+        if (chart2) chart2.destroy();
+        chart2 = new Chart(document.getElementById("contribChart"), {
+          type: "bar",
+          data: {
+            labels: contribNames,
+            datasets: [
+              {
+                label: "Total Commits",
+                data: contribCommits,
+                backgroundColor: "#8B5CF6",
+              },
+            ],
+          },
+          options: {
+            scales: {
+              y: { beginAtZero: true },
+            },
+          },
+        });
+      }
+    </script>
+  </body>
 </html>
