@@ -89,8 +89,41 @@ export function transformContributors(
       commits: c.total,
       avatar_url: c.author.avatar_url,
     }))
-    .sort((a, b) => b.commits - a.commits)
-    .slice(0, 10); // Top 10 contributors
+    .sort((a, b) => b.commits - a.commits);
+  // Removed slice - now returns all contributors, component handles limiting
+}
+
+// Filter commits by date range
+export function filterCommitsByDateRange(
+  commitTimeline: string[],
+  startDate: Date,
+  endDate: Date
+): string[] {
+  if (!commitTimeline || commitTimeline.length === 0) return [];
+  
+  return commitTimeline.filter(dateStr => {
+    const date = new Date(dateStr);
+    return date >= startDate && date <= endDate;
+  });
+}
+
+// Get date range info from commit timeline
+export function getCommitDateRange(commitTimeline: string[]): {
+  minDate: Date;
+  maxDate: Date;
+  totalDays: number;
+} {
+  if (!commitTimeline || commitTimeline.length === 0) {
+    const now = new Date();
+    return { minDate: now, maxDate: now, totalDays: 0 };
+  }
+  
+  const dates = commitTimeline.map(d => new Date(d));
+  const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
+  const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+  const totalDays = Math.ceil((maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24));
+  
+  return { minDate, maxDate, totalDays };
 }
 
 export function transformTimeline(commitTimeline: string[]): TimelineData[] {

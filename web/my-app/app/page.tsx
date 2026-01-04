@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import LanguagePieChart from "@/components/LanguagePieChart";
-import CommitBarChart from "@/components/CommitBarChart";
 import ProjectPulseLineChart from "@/components/ProjectPulseLineChart";
 import CommitHeatmap from "@/components/CommitHeatmap";
 import CommitHistogram from "@/components/CommitHistogram";
 import ConsistencyRadarChart from "@/components/ConsistencyRadarChart";
 import RepoInfoCard from "@/components/RepoInfoCard";
 import MoreInsights from "@/components/MoreInsights";
+import DateRangeFilter, { DateRange } from "@/components/DateRangeFilter";
+import ContributorsPanel from "@/components/ContributorsPanel";
 import { analyzeRepository } from "@/lib/api";
 import {
   AnalyticsReport,
@@ -18,6 +19,8 @@ import {
   transformHourlyActivity,
   transformHeatmap,
   calculateHealthMetrics,
+  filterCommitsByDateRange,
+  getCommitDateRange,
 } from "@/types/charts";
 
 export default function Home() {
@@ -25,6 +28,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [report, setReport] = useState<AnalyticsReport | null>(null);
+  const [dateRange, setDateRange] = useState<DateRange | null>(null);
 
   // Extract owner and repo from URL for AI summary
   const extractOwnerRepo = (url: string) => {
@@ -59,6 +63,7 @@ export default function Home() {
     setLoading(true);
     setError("");
     setReport(null);
+    setDateRange(null); // Reset date range on new analysis
 
     try {
       const data = await analyzeRepository(repoUrl);
@@ -79,28 +84,33 @@ export default function Home() {
     }
   };
 
-  // Transform data for charts
+  // Filter commits by date range
+  const filteredTimeline = useMemo(() => {
+    if (!report?.commit_timeline) return [];
+    if (!dateRange) return report.commit_timeline;
+    return filterCommitsByDateRange(report.commit_timeline, dateRange.start, dateRange.end);
+  }, [report?.commit_timeline, dateRange]);
+
+  // Transform data for charts using filtered timeline
   const languageData = report
     ? transformLanguages(report.repo_info.languages || {})
     : [];
   const contributorData = report
     ? transformContributors(report.contributors || [])
     : [];
-  const timelineData = report
-    ? transformTimeline(report.commit_timeline || [])
-    : [];
-  const hourlyData = report
-    ? transformHourlyActivity(report.commit_timeline || [])
-    : [];
-  const heatmapResult = report
-    ? transformHeatmap(report.commit_timeline || [])
-    : { grid: [], dayLabels: [], timeRange: "days" as const };
-  const healthMetrics = report
-    ? calculateHealthMetrics(
-        report.contributors || [],
-        report.commit_timeline || []
-      )
-    : [];
+  const timelineData = useMemo(() => 
+    transformTimeline(filteredTimeline), [filteredTimeline]
+  );
+  const hourlyData = useMemo(() => 
+    transformHourlyActivity(filteredTimeline), [filteredTimeline]
+  );
+  const heatmapResult = useMemo(() => 
+    transformHeatmap(filteredTimeline), [filteredTimeline]
+  );
+  const healthMetrics = useMemo(() => 
+    report ? calculateHealthMetrics(report.contributors || [], filteredTimeline) : [],
+    [report, filteredTimeline]
+  );
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 font-sans">
@@ -208,6 +218,11 @@ export default function Home() {
                 <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
                   {report.commit_timeline?.length || 0}
                 </p>
+                {filteredTimeline.length !== (report.commit_timeline?.length || 0) && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                    {filteredTimeline.length} in range
+                  </p>
+                )}
               </div>
               <div className="bg-white dark:bg-zinc-900 rounded-lg p-4 shadow-sm">
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -235,12 +250,21 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Date Range Filter */}
+            <DateRangeFilter
+              commitTimeline={report.commit_timeline || []}
+              onChange={setDateRange}
+            />
+
             {/* Charts Grid */}
             <div className="space-y-8">
-              {/* Row 1: Pie Chart and Bar Chart */}
+              {/* Row 1: Pie Chart and Contributors Panel */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <LanguagePieChart data={languageData} />
-                <CommitBarChart data={contributorData} />
+                <ContributorsPanel 
+                  data={contributorData} 
+                  totalCommits={filteredTimeline.length}
+                />
               </div>
 
               {/* Row 2: Line Chart */}
