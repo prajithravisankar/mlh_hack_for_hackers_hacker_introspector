@@ -26,6 +26,24 @@ export default function Home() {
   const [error, setError] = useState("");
   const [report, setReport] = useState<AnalyticsReport | null>(null);
 
+  // Extract owner and repo from URL for AI summary
+  const extractOwnerRepo = (url: string) => {
+    try {
+      const parts = url
+        .replace("https://", "")
+        .replace("http://", "")
+        .split("/");
+      if (parts.length >= 3 && parts[0] === "github.com") {
+        return { owner: parts[1], repo: parts[2] };
+      }
+    } catch {
+      // ignore
+    }
+    return { owner: "", repo: "" };
+  };
+
+  const { owner, repo } = extractOwnerRepo(repoUrl);
+
   const handleAnalyze = async () => {
     if (!repoUrl.trim()) {
       setError("Please enter a repository URL");
@@ -243,7 +261,11 @@ export default function Home() {
             </div>
 
             {/* More Insights Section */}
-            <MoreInsights repoName={report.repo_info.full_name} />
+            <MoreInsights
+              repoName={report.repo_info.full_name}
+              owner={owner}
+              repo={repo}
+            />
           </div>
         )}
 

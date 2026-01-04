@@ -11,8 +11,9 @@ import (
 	"github.com/joho/godotenv"
 
 	// Import the packages we built
+	"github.com/prajithravisankar/mlh_hack_for_hackers_hacker_introspector/internal/ai"
 	"github.com/prajithravisankar/mlh_hack_for_hackers_hacker_introspector/internal/db"
-	"github.com/prajithravisankar/mlh_hack_for_hackers_hacker_introspector/internal/github" // <--- Added this import
+	"github.com/prajithravisankar/mlh_hack_for_hackers_hacker_introspector/internal/github"
 	"github.com/prajithravisankar/mlh_hack_for_hackers_hacker_introspector/internal/introspect"
 )
 
@@ -26,14 +27,17 @@ func main() {
 	db.InitializeDatabase()
 
 	// 2. Initialize GitHub Client (The "General" we built)
-	ghClient := github.NewClient() // <--- NEW STEP
+	ghClient := github.NewClient()
 
-	// 3. Create Repository (The Pantry Manager)
+	// 3. Initialize Gemini AI Client
+	geminiClient := ai.NewGeminiClient()
+
+	// 4. Create Repository (The Pantry Manager)
 	repo := introspect.NewReportRepository(db.GlobalDatabaseAccessor)
 
-	// 4. Create Handler (The Chef)
-	// We now pass BOTH the repo and the github client!
-	handler := introspect.NewHandler(repo, ghClient) // <--- UPDATED THIS LINE
+	// 5. Create Handler (The Chef)
+	// We now pass the repo, github client, and gemini client!
+	handler := introspect.NewHandler(repo, ghClient, geminiClient)
 
 	// 5. Setup Router
 	router := gin.Default()
@@ -58,6 +62,7 @@ func main() {
 	{
 		api.POST("/analyze", handler.AnalyzeRepo)
 		api.GET("/report/:owner/:repo", handler.GetReport)
+		api.POST("/smart-summary", handler.SmartSummary)
 	}
 
 	log.Println("server started on port :8080...")

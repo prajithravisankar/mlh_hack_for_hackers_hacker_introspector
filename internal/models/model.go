@@ -40,3 +40,17 @@ type AnalyticsReport struct {
 	CommitTimeline []time.Time        `json:"commit_timeline" gorm:"serializer:json"` // <--- NEW FIELD
 	GeneratedAt    time.Time          `json:"generated_at"`
 }
+
+// SmartSummary represents AI-generated insights about a repository
+type SmartSummary struct {
+	Archetype        string   `json:"archetype"`          // e.g., "REST API in Go"
+	OneLiner         string   `json:"one_liner"`          // "A high-performance analytics engine..."
+	KeyTech          []string `json:"key_tech"`           // ["Gin", "GORM", "Next.js"]
+	CodeQualityScore int      `json:"code_quality_score"` // 1-10
+	Complexity       string   `json:"complexity"`         // "Low", "Medium", "High"
+}
+
+// FileTreeResponse represents the structure analysis from Stage 1
+type FileTreeResponse struct {
+	Files []string `json:"files"`
+}

@@ -5,23 +5,31 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prajithravisankar/mlh_hack_for_hackers_hacker_introspector/internal/ai"
 	"github.com/prajithravisankar/mlh_hack_for_hackers_hacker_introspector/internal/github"
 )
 
 type Handler struct {
 	repo         *ReportRepository
 	githubClient *github.Client
+	geminiClient *ai.GeminiClient
 }
 
-func NewHandler(repo *ReportRepository, githubClient *github.Client) *Handler {
+func NewHandler(repo *ReportRepository, githubClient *github.Client, geminiClient *ai.GeminiClient) *Handler {
 	return &Handler{
 		repo:         repo,
 		githubClient: githubClient,
+		geminiClient: geminiClient,
 	}
 }
 
 type AnalyzeRequest struct {
 	RepoURL string `json:"repo_url" binding:"required,url"`
+}
+
+type SmartSummaryRequest struct {
+	Owner string `json:"owner" binding:"required"`
+	Repo  string `json:"repo" binding:"required"`
 }
 
 func (h *Handler) AnalyzeRepo(c *gin.Context) {
@@ -75,4 +83,26 @@ func (h *Handler) GetReport(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, report)
+}
+
+// SmartSummary generates an AI-powered summary of the repository
+func (h *Handler) SmartSummary(c *gin.Context) {
+	var req SmartSummaryRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request. Required: owner and repo"})
+		return
+	}
+
+	fmt.Printf("Generating smart summary for %s/%s...\n", req.Owner, req.Repo)
+
+	summary, stage, err := h.geminiClient.GenerateSmartSummary(h.githubClient, req.Owner, req.Repo)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+			"stage": stage,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, summary)
 }
