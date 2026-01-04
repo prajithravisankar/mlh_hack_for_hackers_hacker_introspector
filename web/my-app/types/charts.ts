@@ -94,24 +94,77 @@ export function transformContributors(
 }
 
 export function transformTimeline(commitTimeline: string[]): TimelineData[] {
-  // Group commits by day
-  const dailyCounts: Record<string, number> = {};
+  if (!commitTimeline || commitTimeline.length === 0) {
+    return [];
+  }
+
+  // Group commits by appropriate time unit based on data range
+  const dates = commitTimeline.map((d) => new Date(d));
+  const minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
+  const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
+
+  const daysDiff = Math.ceil(
+    (maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  // Choose grouping based on data range
+  let groupBy: "hour" | "day" | "week" | "month";
+  if (daysDiff <= 1) {
+    groupBy = "hour";
+  } else if (daysDiff <= 60) {
+    groupBy = "day";
+  } else if (daysDiff <= 365) {
+    groupBy = "week";
+  } else {
+    groupBy = "month";
+  }
+
+  const counts: Record<string, number> = {};
 
   commitTimeline.forEach((dateStr) => {
     const date = new Date(dateStr);
-    const dayKey = date.toISOString().split("T")[0];
-    dailyCounts[dayKey] = (dailyCounts[dayKey] || 0) + 1;
+    let key: string;
+
+    switch (groupBy) {
+      case "hour":
+        key = `${date.toISOString().split("T")[0]} ${date
+          .getUTCHours()
+          .toString()
+          .padStart(2, "0")}:00`;
+        break;
+      case "day":
+        key = date.toISOString().split("T")[0];
+        break;
+      case "week":
+        // Get the Monday of the week
+        const monday = new Date(date);
+        monday.setUTCDate(date.getUTCDate() - date.getUTCDay() + 1);
+        key = monday.toISOString().split("T")[0];
+        break;
+      case "month":
+        key = `${date.getUTCFullYear()}-${(date.getUTCMonth() + 1)
+          .toString()
+          .padStart(2, "0")}-01`;
+        break;
+    }
+
+    counts[key] = (counts[key] || 0) + 1;
   });
 
-  return Object.entries(dailyCounts)
+  return Object.entries(counts)
     .map(([date, commits]) => ({ date, commits }))
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .slice(-30); // Last 30 days with activity
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
 export function transformHourlyActivity(
   commitTimeline: string[]
 ): HourlyData[] {
+  if (!commitTimeline || commitTimeline.length === 0) {
+    return Array(24)
+      .fill(null)
+      .map((_, hour) => ({ hour, commits: 0 }));
+  }
+
   const hourlyCounts: number[] = Array(24).fill(0);
 
   commitTimeline.forEach((dateStr) => {
@@ -123,41 +176,119 @@ export function transformHourlyActivity(
   return hourlyCounts.map((commits, hour) => ({ hour, commits }));
 }
 
-export function transformHeatmap(commitTimeline: string[]): number[][] {
-  // Get the date range
-  if (commitTimeline.length === 0) {
-    return [Array(24).fill(0)];
+// HeatmapData interface for the new dynamic heatmap
+export interface HeatmapCell {
+  dayLabel: string;
+  hour: number;
+  commits: number;
+}
+
+export interface HeatmapResult {
+  grid: number[][];
+  dayLabels: string[];
+  timeRange: "hours" | "days" | "weeks";
+}
+
+export function transformHeatmap(commitTimeline: string[]): HeatmapResult {
+  // Default empty result
+  if (!commitTimeline || commitTimeline.length === 0) {
+    return {
+      grid: [Array(24).fill(0)],
+      dayLabels: ["No data"],
+      timeRange: "days",
+    };
   }
 
   const dates = commitTimeline.map((d) => new Date(d));
   const minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
   const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
 
-  // Calculate number of days
-  const dayDiff =
-    Math.ceil((maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24)) +
-    1;
-  const numDays = Math.min(dayDiff, 7); // Max 7 days for heatmap
+  const hoursDiff = (maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60);
+  const daysDiff = hoursDiff / 24;
+
+  // Determine the best time range for display
+  let timeRange: "hours" | "days" | "weeks";
+  let numRows: number;
+  let getRowIndex: (date: Date) => number;
+  let getLabel: (index: number) => string;
+
+  if (daysDiff <= 1) {
+    // Less than a day - show hours grouped into 4-hour blocks
+    timeRange = "hours";
+    numRows = 6; // 6 x 4-hour blocks
+    getRowIndex = (date: Date) => {
+      const hour = date.getUTCHours();
+      return Math.floor(hour / 4);
+    };
+    getLabel = (index: number) => `${index * 4}:00 - ${(index + 1) * 4}:00`;
+  } else if (daysDiff <= 14) {
+    // Up to 2 weeks - show individual days
+    timeRange = "days";
+    numRows = Math.min(Math.ceil(daysDiff) + 1, 14);
+    const startOfDay = new Date(minDate);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    getRowIndex = (date: Date) => {
+      const commitDay = new Date(date);
+      commitDay.setUTCHours(0, 0, 0, 0);
+      const dayIndex = Math.floor(
+        (commitDay.getTime() - startOfDay.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      return Math.min(Math.max(dayIndex, 0), numRows - 1);
+    };
+    getLabel = (index: number) => {
+      const labelDate = new Date(startOfDay);
+      labelDate.setUTCDate(labelDate.getUTCDate() + index);
+      return labelDate.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      });
+    };
+  } else {
+    // More than 2 weeks - show weeks
+    timeRange = "weeks";
+    numRows = Math.min(Math.ceil(daysDiff / 7) + 1, 12); // Max 12 weeks
+    const startOfWeek = new Date(minDate);
+    startOfWeek.setUTCDate(minDate.getUTCDate() - minDate.getUTCDay());
+    startOfWeek.setUTCHours(0, 0, 0, 0);
+    getRowIndex = (date: Date) => {
+      const weekIndex = Math.floor(
+        (date.getTime() - startOfWeek.getTime()) / (1000 * 60 * 60 * 24 * 7)
+      );
+      return Math.min(Math.max(weekIndex, 0), numRows - 1);
+    };
+    getLabel = (index: number) => {
+      const labelDate = new Date(startOfWeek);
+      labelDate.setUTCDate(labelDate.getUTCDate() + index * 7);
+      return `Week of ${labelDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      })}`;
+    };
+  }
 
   // Initialize grid
-  const grid: number[][] = Array(numDays)
+  const grid: number[][] = Array(numRows)
     .fill(null)
     .map(() => Array(24).fill(0));
 
-  // Count commits per day/hour
+  // Generate labels
+  const dayLabels: string[] = Array(numRows)
+    .fill(null)
+    .map((_, i) => getLabel(i));
+
+  // Count commits per row/hour
   commitTimeline.forEach((dateStr) => {
     const date = new Date(dateStr);
-    const dayIndex = Math.floor(
-      (maxDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    const rowIndex = getRowIndex(date);
     const hour = date.getUTCHours();
 
-    if (dayIndex >= 0 && dayIndex < numDays) {
-      grid[numDays - 1 - dayIndex][hour]++;
+    if (rowIndex >= 0 && rowIndex < numRows) {
+      grid[rowIndex][hour]++;
     }
   });
 
-  return grid;
+  return { grid, dayLabels, timeRange };
 }
 
 export function calculateHealthMetrics(

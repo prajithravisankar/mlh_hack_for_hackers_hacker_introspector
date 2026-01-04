@@ -92,9 +92,9 @@ export default function Home() {
   const hourlyData = report
     ? transformHourlyActivity(report.commit_timeline || [])
     : [];
-  const heatmapData = report
+  const heatmapResult = report
     ? transformHeatmap(report.commit_timeline || [])
-    : [];
+    : { grid: [], dayLabels: [], timeRange: "days" as const };
   const healthMetrics = report
     ? calculateHealthMetrics(
         report.contributors || [],
@@ -250,7 +250,11 @@ export default function Home() {
 
               {/* Row 3: Heatmap */}
               <div className="grid grid-cols-1">
-                <CommitHeatmap data={heatmapData} />
+                <CommitHeatmap
+                  data={heatmapResult.grid}
+                  dayLabels={heatmapResult.dayLabels}
+                  timeRange={heatmapResult.timeRange}
+                />
               </div>
 
               {/* Row 4: Histogram and Radar Chart */}
