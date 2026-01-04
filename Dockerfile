@@ -16,11 +16,13 @@ COPY . .
 # Build the binary with CGO enabled for SQLite
 RUN CGO_ENABLED=1 GOOS=linux go build -o server ./cmd/server/main.go
 
-# Final stage
+# ---------------------------------------------------------
+# Final stage (Runtime)
+# ---------------------------------------------------------
 FROM alpine:latest
 
-# Install runtime dependencies for SQLite
-RUN apk add --no-cache ca-certificates libc6-compat
+# ✅ FIX: Install 'git' here so the server can clone repos!
+RUN apk add --no-cache ca-certificates libc6-compat git openssh
 
 WORKDIR /app
 
