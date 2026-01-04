@@ -14,11 +14,11 @@ interface Props {
 }
 
 const PRESETS: { key: DatePreset; label: string }[] = [
-  { key: 'all', label: 'All Time' },
-  { key: '7d', label: '7 Days' },
-  { key: '30d', label: '30 Days' },
-  { key: '90d', label: '90 Days' },
-  { key: '1y', label: '1 Year' },
+  { key: "all", label: "All Time" },
+  { key: "7d", label: "7 Days" },
+  { key: "30d", label: "30 Days" },
+  { key: "90d", label: "90 Days" },
+  { key: "1y", label: "1 Year" },
 ];
 
 export default function FilterBar({
@@ -59,19 +59,19 @@ export default function FilterBar({
               onClick={() => onPresetChange(key)}
               className={`px-3 py-1.5 text-sm font-mono border transition-colors ${
                 datePreset === key
-                  ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-900 dark:border-zinc-100'
-                  : 'bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 hover:border-zinc-500 dark:hover:border-zinc-500'
+                  ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-900 dark:border-zinc-100"
+                  : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 hover:border-zinc-500 dark:hover:border-zinc-500"
               }`}
             >
               {label}
             </button>
           ))}
           <button
-            onClick={() => onPresetChange('custom')}
+            onClick={() => onPresetChange("custom")}
             className={`px-3 py-1.5 text-sm font-mono border transition-colors ${
-              datePreset === 'custom'
-                ? 'bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-900 dark:border-zinc-100'
-                : 'bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 hover:border-zinc-500 dark:hover:border-zinc-500'
+              datePreset === "custom"
+                ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-zinc-900 dark:border-zinc-100"
+                : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700 hover:border-zinc-500 dark:hover:border-zinc-500"
             }`}
           >
             Custom
@@ -82,44 +82,56 @@ export default function FilterBar({
         <div className="flex items-center gap-4 text-sm font-mono">
           {showingFiltered && (
             <span className="text-zinc-500 dark:text-zinc-400">
-              Showing <span className="font-bold text-zinc-900 dark:text-zinc-100">{filteredCommits.toLocaleString()}</span> of {totalCommits.toLocaleString()} commits
+              Showing{" "}
+              <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                {filteredCommits.toLocaleString()}
+              </span>{" "}
+              of {totalCommits.toLocaleString()} commits
             </span>
           )}
           {!showingFiltered && (
             <span className="text-zinc-500 dark:text-zinc-400">
-              <span className="font-bold text-zinc-900 dark:text-zinc-100">{totalCommits.toLocaleString()}</span> total commits
+              <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                {totalCommits.toLocaleString()}
+              </span>{" "}
+              total commits
             </span>
           )}
         </div>
       </div>
 
       {/* Custom date range inputs */}
-      {datePreset === 'custom' && dateRange && (
+      {datePreset === "custom" && dateRange && (
         <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
-            <label className="text-sm text-zinc-600 dark:text-zinc-400">From:</label>
+            <label className="text-sm text-zinc-600 dark:text-zinc-400">
+              From:
+            </label>
             <input
               type="date"
-              value={dateRange.start.toISOString().split('T')[0]}
-              min={minDate?.toISOString().split('T')[0]}
-              max={dateRange.end.toISOString().split('T')[0]}
+              value={dateRange.start.toISOString().split("T")[0]}
+              min={minDate?.toISOString().split("T")[0]}
+              max={dateRange.end.toISOString().split("T")[0]}
               onChange={handleStartChange}
               className="px-3 py-1.5 text-sm font-mono border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-sm text-zinc-600 dark:text-zinc-400">To:</label>
+            <label className="text-sm text-zinc-600 dark:text-zinc-400">
+              To:
+            </label>
             <input
               type="date"
-              value={dateRange.end.toISOString().split('T')[0]}
-              min={dateRange.start.toISOString().split('T')[0]}
-              max={maxDate?.toISOString().split('T')[0]}
+              value={dateRange.end.toISOString().split("T")[0]}
+              min={dateRange.start.toISOString().split("T")[0]}
+              max={maxDate?.toISOString().split("T")[0]}
               onChange={handleEndChange}
               className="px-3 py-1.5 text-sm font-mono border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
             />
           </div>
           <span className="text-xs text-zinc-500 dark:text-zinc-500 font-mono">
-            {formatDate(dateRange.start, 'short')} → {formatDate(dateRange.end, 'short')}
+            {formatDate(dateRange.start, "short")} →{" "}
+            {formatDate(dateRange.end, "short")}
           </span>
         </div>
       )}

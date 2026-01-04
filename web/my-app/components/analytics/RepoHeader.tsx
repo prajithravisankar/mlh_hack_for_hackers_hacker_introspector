@@ -20,7 +20,7 @@ export default function RepoHeader({ repoInfo }: Props) {
               {repoInfo.description}
             </p>
           )}
-          
+
           {/* Meta info */}
           <div className="mt-4 flex flex-wrap items-center gap-4 text-sm font-mono text-zinc-500 dark:text-zinc-500">
             {repoInfo.language && (
@@ -35,7 +35,9 @@ export default function RepoHeader({ repoInfo }: Props) {
               <span>○ {formatNumber(repoInfo.open_issues_count)} issues</span>
             )}
             {repoInfo.created_at && (
-              <span>Created {formatDate(new Date(repoInfo.created_at), 'medium')}</span>
+              <span>
+                Created {formatDate(new Date(repoInfo.created_at), "medium")}
+              </span>
             )}
           </div>
         </div>

@@ -4,10 +4,10 @@ import { useState, useMemo, useCallback } from "react";
 import {
   FilterBar,
   StatsGrid,
-  CommitTimeline,
-  HourlyChart,
+  ActivitySummary,
+  TimeInsights,
   WeekdayChart,
-  ContributionHeatmap,
+  RecentActivity,
   ContributorsList,
   LanguageBreakdown,
   RepoHeader,
@@ -24,7 +24,6 @@ import {
   groupCommitsByDay,
   groupCommitsByHour,
   groupCommitsByDayOfWeek,
-  generateHeatmapData,
   processContributors,
   processLanguages,
   calculateProjectStats,
@@ -39,7 +38,9 @@ export default function Home() {
 
   // Filter state
   const [datePreset, setDatePreset] = useState<DatePreset>("all");
-  const [customDateRange, setCustomDateRange] = useState<DateRange | null>(null);
+  const [customDateRange, setCustomDateRange] = useState<DateRange | null>(
+    null
+  );
 
   // Parse all commit dates once
   const allDates = useMemo(() => {
@@ -80,10 +81,6 @@ export default function Home() {
     return groupCommitsByDayOfWeek(filteredDates);
   }, [filteredDates]);
 
-  const heatmapData = useMemo(() => {
-    return generateHeatmapData(filteredDates, 52);
-  }, [filteredDates]);
-
   const contributors = useMemo(() => {
     return processContributors(report?.contributors);
   }, [report?.contributors]);
@@ -106,14 +103,17 @@ export default function Home() {
   }, [repoUrl]);
 
   // Handlers
-  const handlePresetChange = useCallback((preset: DatePreset) => {
-    setDatePreset(preset);
-    if (preset !== "custom") {
-      setCustomDateRange(null);
-    } else if (minDate && maxDate) {
-      setCustomDateRange({ start: minDate, end: maxDate });
-    }
-  }, [minDate, maxDate]);
+  const handlePresetChange = useCallback(
+    (preset: DatePreset) => {
+      setDatePreset(preset);
+      if (preset !== "custom") {
+        setCustomDateRange(null);
+      } else if (minDate && maxDate) {
+        setCustomDateRange({ start: minDate, end: maxDate });
+      }
+    },
+    [minDate, maxDate]
+  );
 
   const handleCustomRangeChange = useCallback((range: DateRange) => {
     setDatePreset("custom");
@@ -142,7 +142,9 @@ export default function Home() {
       setReport(data);
     } catch (err) {
       console.error("Analysis error:", err);
-      setError(err instanceof Error ? err.message : "Failed to analyze repository");
+      setError(
+        err instanceof Error ? err.message : "Failed to analyze repository"
+      );
     } finally {
       setLoading(false);
     }
@@ -195,9 +197,24 @@ export default function Home() {
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  <svg
+                    className="animate-spin h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
                   </svg>
                   ANALYZING
                 </span>
@@ -253,15 +270,15 @@ export default function Home() {
             {/* Stats Grid */}
             <StatsGrid stats={stats} />
 
-            {/* Main Timeline Chart */}
-            <CommitTimeline data={commitsByDay} title="Commit Activity Over Time" />
+            {/* Activity Summary - replaces buggy CommitTimeline */}
+            <ActivitySummary data={commitsByDay} />
 
-            {/* Heatmap */}
-            <ContributionHeatmap data={heatmapData} />
+            {/* Recent Activity - replaces buggy ContributionHeatmap */}
+            <RecentActivity data={commitsByDay} />
 
             {/* Two Column Grid: Time Analysis */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <HourlyChart data={commitsByHour} />
+              <TimeInsights data={commitsByHour} />
               <WeekdayChart data={commitsByDayOfWeek} />
             </div>
 
@@ -287,15 +304,26 @@ export default function Home() {
         {!report && !loading && (
           <div className="text-center py-20">
             <div className="inline-block p-6 border-2 border-dashed border-zinc-300 dark:border-zinc-700 mb-6">
-              <svg className="w-12 h-12 mx-auto text-zinc-400 dark:text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              <svg
+                className="w-12 h-12 mx-auto text-zinc-400 dark:text-zinc-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
               </svg>
             </div>
             <h2 className="text-lg font-mono font-bold text-zinc-700 dark:text-zinc-300 tracking-tight">
               ENTER A REPOSITORY URL TO BEGIN
             </h2>
             <p className="text-sm font-mono text-zinc-500 dark:text-zinc-500 mt-2 max-w-md mx-auto">
-              Get deep insights into commit patterns, contributor activity, and project health metrics
+              Get deep insights into commit patterns, contributor activity, and
+              project health metrics
             </p>
           </div>
         )}

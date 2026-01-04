@@ -9,7 +9,7 @@ interface Props {
 
 export default function HourlyChart({ data }: Props) {
   const maxCount = useMemo(() => {
-    return Math.max(...data.map(d => d.count), 1);
+    return Math.max(...data.map((d) => d.count), 1);
   }, [data]);
 
   const totalCommits = useMemo(() => {
@@ -19,7 +19,7 @@ export default function HourlyChart({ data }: Props) {
   // Find peak hours
   const peakHours = useMemo(() => {
     const sorted = [...data].sort((a, b) => b.count - a.count);
-    return sorted.slice(0, 3).filter(h => h.count > 0);
+    return sorted.slice(0, 3).filter((h) => h.count > 0);
   }, [data]);
 
   if (totalCommits === 0) {
@@ -42,7 +42,10 @@ export default function HourlyChart({ data }: Props) {
           Activity by Hour (UTC)
         </h3>
         <div className="text-xs font-mono text-zinc-400 dark:text-zinc-600">
-          Peak: {peakHours.length > 0 ? peakHours.map(h => h.label).join(', ') : 'N/A'}
+          Peak:{" "}
+          {peakHours.length > 0
+            ? peakHours.map((h) => h.label).join(", ")
+            : "N/A"}
         </div>
       </div>
 
@@ -50,8 +53,11 @@ export default function HourlyChart({ data }: Props) {
       <div className="relative h-40">
         {/* Grid lines */}
         <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-          {[0, 1, 2, 3].map(i => (
-            <div key={i} className="border-b border-zinc-100 dark:border-zinc-800" />
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="border-b border-zinc-100 dark:border-zinc-800"
+            />
           ))}
         </div>
 
@@ -59,8 +65,8 @@ export default function HourlyChart({ data }: Props) {
         <div className="relative h-full flex items-end gap-1">
           {data.map((item) => {
             const height = (item.count / maxCount) * 100;
-            const isPeak = peakHours.some(h => h.hour === item.hour);
-            
+            const isPeak = peakHours.some((h) => h.hour === item.hour);
+
             return (
               <div
                 key={item.hour}
@@ -68,13 +74,15 @@ export default function HourlyChart({ data }: Props) {
               >
                 <div
                   className={`w-full transition-colors ${
-                    isPeak 
-                      ? 'bg-zinc-900 dark:bg-zinc-100' 
-                      : 'bg-zinc-400 dark:bg-zinc-600 hover:bg-zinc-600 dark:hover:bg-zinc-400'
+                    isPeak
+                      ? "bg-zinc-900 dark:bg-zinc-100"
+                      : "bg-zinc-400 dark:bg-zinc-600 hover:bg-zinc-600 dark:hover:bg-zinc-400"
                   }`}
-                  style={{ height: `${Math.max(height, item.count > 0 ? 3 : 0)}%` }}
+                  style={{
+                    height: `${Math.max(height, item.count > 0 ? 3 : 0)}%`,
+                  }}
                 />
-                
+
                 {/* Tooltip */}
                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-mono whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                   {item.label}: {formatNumber(item.count)} commits

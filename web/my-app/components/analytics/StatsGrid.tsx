@@ -1,6 +1,11 @@
 "use client";
 
-import { ProjectStats, formatDate, formatDuration, formatNumber } from "@/types/analytics";
+import {
+  ProjectStats,
+  formatDate,
+  formatDuration,
+  formatNumber,
+} from "@/types/analytics";
 
 interface Props {
   stats: ProjectStats;
@@ -19,7 +24,7 @@ function StatCard({ label, value, subtext }: StatCardProps) {
         {label}
       </p>
       <p className="text-2xl font-bold font-mono text-zinc-900 dark:text-zinc-100">
-        {typeof value === 'number' ? formatNumber(value) : value}
+        {typeof value === "number" ? formatNumber(value) : value}
       </p>
       {subtext && (
         <p className="text-xs font-mono text-zinc-400 dark:text-zinc-600 mt-1">
@@ -32,8 +37,8 @@ function StatCard({ label, value, subtext }: StatCardProps) {
 
 export default function StatsGrid({ stats }: Props) {
   const formatHour = (h: number): string => {
-    if (h === 0) return '12 AM';
-    if (h === 12) return '12 PM';
+    if (h === 0) return "12 AM";
+    if (h === 12) return "12 PM";
     return h < 12 ? `${h} AM` : `${h - 12} PM`;
   };
 
@@ -42,20 +47,22 @@ export default function StatsGrid({ stats }: Props) {
       <StatCard
         label="Commits"
         value={stats.filteredCommits}
-        subtext={stats.filteredCommits !== stats.totalCommits ? `of ${formatNumber(stats.totalCommits)} total` : undefined}
+        subtext={
+          stats.filteredCommits !== stats.totalCommits
+            ? `of ${formatNumber(stats.totalCommits)} total`
+            : undefined
+        }
       />
-      <StatCard
-        label="Contributors"
-        value={stats.totalContributors}
-      />
-      <StatCard
-        label="Languages"
-        value={stats.totalLanguages}
-      />
+      <StatCard label="Contributors" value={stats.totalContributors} />
+      <StatCard label="Languages" value={stats.totalLanguages} />
       <StatCard
         label="Project Age"
         value={formatDuration(stats.projectAgeDays)}
-        subtext={stats.firstCommitDate ? `since ${formatDate(stats.firstCommitDate, 'short')}` : undefined}
+        subtext={
+          stats.firstCommitDate
+            ? `since ${formatDate(stats.firstCommitDate, "short")}`
+            : undefined
+        }
       />
       <StatCard
         label="Avg/Day"
@@ -64,8 +71,12 @@ export default function StatsGrid({ stats }: Props) {
       />
       <StatCard
         label="Peak Hour"
-        value={stats.peakHour ? formatHour(stats.peakHour.hour) : 'N/A'}
-        subtext={stats.peakHour ? `${formatNumber(stats.peakHour.count)} commits` : undefined}
+        value={stats.peakHour ? formatHour(stats.peakHour.hour) : "N/A"}
+        subtext={
+          stats.peakHour
+            ? `${formatNumber(stats.peakHour.count)} commits`
+            : undefined
+        }
       />
     </div>
   );

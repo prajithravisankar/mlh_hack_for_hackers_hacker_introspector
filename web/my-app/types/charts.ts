@@ -100,8 +100,8 @@ export function filterCommitsByDateRange(
   endDate: Date
 ): string[] {
   if (!commitTimeline || commitTimeline.length === 0) return [];
-  
-  return commitTimeline.filter(dateStr => {
+
+  return commitTimeline.filter((dateStr) => {
     const date = new Date(dateStr);
     return date >= startDate && date <= endDate;
   });
@@ -117,12 +117,14 @@ export function getCommitDateRange(commitTimeline: string[]): {
     const now = new Date();
     return { minDate: now, maxDate: now, totalDays: 0 };
   }
-  
-  const dates = commitTimeline.map(d => new Date(d));
-  const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
-  const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
-  const totalDays = Math.ceil((maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24));
-  
+
+  const dates = commitTimeline.map((d) => new Date(d));
+  const minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
+  const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
+  const totalDays = Math.ceil(
+    (maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
   return { minDate, maxDate, totalDays };
 }
 

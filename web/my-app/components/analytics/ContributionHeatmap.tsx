@@ -8,13 +8,13 @@ interface Props {
   weeksToShow?: number;
 }
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function ContributionHeatmap({ data, weeksToShow = 52 }: Props) {
   // Get max count for color scaling
   const maxCount = useMemo(() => {
     if (data.length === 0) return 1;
-    return Math.max(...data.map(d => d.count), 1);
+    return Math.max(...data.map((d) => d.count), 1);
   }, [data]);
 
   // Group cells by week
@@ -23,7 +23,7 @@ export default function ContributionHeatmap({ data, weeksToShow = 52 }: Props) {
     let currentWeek: HeatmapCell[] = [];
     let lastWeekIndex = -1;
 
-    data.forEach(cell => {
+    data.forEach((cell) => {
       if (cell.weekIndex !== lastWeekIndex && currentWeek.length > 0) {
         grouped.push(currentWeek);
         currentWeek = [];
@@ -31,7 +31,7 @@ export default function ContributionHeatmap({ data, weeksToShow = 52 }: Props) {
       currentWeek.push(cell);
       lastWeekIndex = cell.weekIndex;
     });
-    
+
     if (currentWeek.length > 0) {
       grouped.push(currentWeek);
     }
@@ -42,30 +42,30 @@ export default function ContributionHeatmap({ data, weeksToShow = 52 }: Props) {
   // Get month labels
   const monthLabels = useMemo(() => {
     if (data.length === 0) return [];
-    
+
     const labels: { month: string; weekIndex: number }[] = [];
-    let lastMonth = '';
-    
-    data.forEach(cell => {
+    let lastMonth = "";
+
+    data.forEach((cell) => {
       const date = new Date(cell.date);
-      const month = date.toLocaleDateString('en-US', { month: 'short' });
+      const month = date.toLocaleDateString("en-US", { month: "short" });
       if (month !== lastMonth) {
         labels.push({ month, weekIndex: cell.weekIndex });
         lastMonth = month;
       }
     });
-    
+
     return labels;
   }, [data]);
 
   // Get color for count
   const getColor = (count: number): string => {
-    if (count === 0) return 'bg-zinc-100 dark:bg-zinc-800';
+    if (count === 0) return "bg-zinc-100 dark:bg-zinc-800";
     const ratio = count / maxCount;
-    if (ratio <= 0.25) return 'bg-zinc-300 dark:bg-zinc-700';
-    if (ratio <= 0.5) return 'bg-zinc-400 dark:bg-zinc-600';
-    if (ratio <= 0.75) return 'bg-zinc-600 dark:bg-zinc-400';
-    return 'bg-zinc-900 dark:bg-zinc-100';
+    if (ratio <= 0.25) return "bg-zinc-300 dark:bg-zinc-700";
+    if (ratio <= 0.5) return "bg-zinc-400 dark:bg-zinc-600";
+    if (ratio <= 0.75) return "bg-zinc-600 dark:bg-zinc-400";
+    return "bg-zinc-900 dark:bg-zinc-100";
   };
 
   // Total commits
@@ -75,7 +75,7 @@ export default function ContributionHeatmap({ data, weeksToShow = 52 }: Props) {
 
   // Active days
   const activeDays = useMemo(() => {
-    return data.filter(d => d.count > 0).length;
+    return data.filter((d) => d.count > 0).length;
   }, [data]);
 
   if (data.length === 0) {
@@ -98,7 +98,8 @@ export default function ContributionHeatmap({ data, weeksToShow = 52 }: Props) {
           Contribution Heatmap
         </h3>
         <span className="text-xs font-mono text-zinc-400 dark:text-zinc-600">
-          {formatNumber(totalCommits)} commits on {formatNumber(activeDays)} days
+          {formatNumber(totalCommits)} commits on {formatNumber(activeDays)}{" "}
+          days
         </span>
       </div>
 
@@ -111,7 +112,7 @@ export default function ContributionHeatmap({ data, weeksToShow = 52 }: Props) {
                 key={`${month}-${weekIndex}-${idx}`}
                 className="text-xs font-mono text-zinc-400 dark:text-zinc-600"
                 style={{
-                  position: 'absolute',
+                  position: "absolute",
                   left: `${32 + weekIndex * 13}px`,
                 }}
               >
@@ -127,7 +128,7 @@ export default function ContributionHeatmap({ data, weeksToShow = 52 }: Props) {
                 <div
                   key={day}
                   className="h-[10px] flex items-center text-xs font-mono text-zinc-400 dark:text-zinc-600"
-                  style={{ visibility: idx % 2 === 0 ? 'hidden' : 'visible' }}
+                  style={{ visibility: idx % 2 === 0 ? "hidden" : "visible" }}
                 >
                   {day}
                 </div>
@@ -139,23 +140,27 @@ export default function ContributionHeatmap({ data, weeksToShow = 52 }: Props) {
               {weeks.map((week, weekIdx) => (
                 <div key={weekIdx} className="flex flex-col gap-[3px]">
                   {/* Fill in empty cells at the start of first week */}
-                  {weekIdx === 0 && week[0]?.dayOfWeek > 0 && (
-                    Array(week[0].dayOfWeek).fill(null).map((_, i) => (
-                      <div key={`empty-${i}`} className="w-[10px] h-[10px]" />
-                    ))
-                  )}
+                  {weekIdx === 0 &&
+                    week[0]?.dayOfWeek > 0 &&
+                    Array(week[0].dayOfWeek)
+                      .fill(null)
+                      .map((_, i) => (
+                        <div key={`empty-${i}`} className="w-[10px] h-[10px]" />
+                      ))}
                   {week.map((cell) => (
                     <div
                       key={cell.date}
-                      className={`w-[10px] h-[10px] ${getColor(cell.count)} group relative cursor-pointer`}
+                      className={`w-[10px] h-[10px] ${getColor(
+                        cell.count
+                      )} group relative cursor-pointer`}
                     >
                       {/* Tooltip */}
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-mono whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                        {cell.count} commit{cell.count !== 1 ? 's' : ''} on{' '}
-                        {new Date(cell.date).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          day: 'numeric',
-                          year: 'numeric'
+                        {cell.count} commit{cell.count !== 1 ? "s" : ""} on{" "}
+                        {new Date(cell.date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
                         })}
                       </div>
                     </div>

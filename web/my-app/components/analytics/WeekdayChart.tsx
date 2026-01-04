@@ -9,7 +9,7 @@ interface Props {
 
 export default function WeekdayChart({ data }: Props) {
   const maxCount = useMemo(() => {
-    return Math.max(...data.map(d => d.count), 1);
+    return Math.max(...data.map((d) => d.count), 1);
   }, [data]);
 
   const totalCommits = useMemo(() => {
@@ -23,7 +23,10 @@ export default function WeekdayChart({ data }: Props) {
 
   // Find the busiest day
   const busiestDay = useMemo(() => {
-    return reorderedData.reduce((max, d) => d.count > max.count ? d : max, reorderedData[0]);
+    return reorderedData.reduce(
+      (max, d) => (d.count > max.count ? d : max),
+      reorderedData[0]
+    );
   }, [reorderedData]);
 
   if (totalCommits === 0) {
@@ -55,7 +58,7 @@ export default function WeekdayChart({ data }: Props) {
         {reorderedData.map((item) => {
           const width = (item.count / maxCount) * 100;
           const isBusiest = item.day === busiestDay.day;
-          
+
           return (
             <div key={item.day} className="flex items-center gap-3 group">
               <span className="w-10 text-xs font-mono text-zinc-500 dark:text-zinc-500 text-right">
@@ -65,10 +68,12 @@ export default function WeekdayChart({ data }: Props) {
                 <div
                   className={`h-full transition-all ${
                     isBusiest
-                      ? 'bg-zinc-900 dark:bg-zinc-100'
-                      : 'bg-zinc-400 dark:bg-zinc-600 group-hover:bg-zinc-600 dark:group-hover:bg-zinc-400'
+                      ? "bg-zinc-900 dark:bg-zinc-100"
+                      : "bg-zinc-400 dark:bg-zinc-600 group-hover:bg-zinc-600 dark:group-hover:bg-zinc-400"
                   }`}
-                  style={{ width: `${Math.max(width, item.count > 0 ? 1 : 0)}%` }}
+                  style={{
+                    width: `${Math.max(width, item.count > 0 ? 1 : 0)}%`,
+                  }}
                 />
               </div>
               <span className="w-16 text-xs font-mono text-zinc-500 dark:text-zinc-500 text-right">
