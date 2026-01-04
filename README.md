@@ -8,7 +8,7 @@ Built for **MLH Hack for Hackers 2026** 🏆
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat&logo=next.js)](https://nextjs.org/)
 [![Gemini AI](https://img.shields.io/badge/Gemini-AI-4285F4?style=flat&logo=google)](https://ai.google.dev/)
 [![ElevenLabs](https://img.shields.io/badge/ElevenLabs-TTS-000000?style=flat)](https://elevenlabs.io/)
-[![Vultr](https://img.shields.io/badge/ElevenLabs-TTS-000000?style=flat)](https://www.vultr.com/promo/try250?service=try250&utm_source=google-na-brand&utm_medium=paidmedia&obility_id=42460259882&utm_campaign=NA_-_Search_-_Vultr_Branded_-_1009&utm_term=vultr%20vps&utm_content=665882116752&gad_source=1&gad_campaignid=780450717&gbraid=0AAAAADMuDjDFYO5p25Bl6OeHSBFGBn34q&gclid=Cj0KCQiAvOjKBhC9ARIsAFvz5ljs-zYeq5Wt3p9dEHhQzRS_wrjLfY6xCFvIj19aAa3TEC7RQV02hVQaAg9uEALw_wcB)
+[![Vultr](https://img.shields.io/badge/Vultr-TTS-000000?style=flat)](https://www.vultr.com/promo/try250?service=try250&utm_source=google-na-brand&utm_medium=paidmedia&obility_id=42460259882&utm_campaign=NA_-_Search_-_Vultr_Branded_-_1009&utm_term=vultr%20vps&utm_content=665882116752&gad_source=1&gad_campaignid=780450717&gbraid=0AAAAADMuDjDFYO5p25Bl6OeHSBFGBn34q&gclid=Cj0KCQiAvOjKBhC9ARIsAFvz5ljs-zYeq5Wt3p9dEHhQzRS_wrjLfY6xCFvIj19aAa3TEC7RQV02hVQaAg9uEALw_wcB)
 ---
 
 ## ✨ Features
