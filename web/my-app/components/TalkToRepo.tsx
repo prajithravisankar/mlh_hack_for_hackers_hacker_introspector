@@ -476,97 +476,46 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                     {selectedMode === "talk" && (
                       <motion.div
                         key="voice-interface"
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        className="flex-1 flex flex-col bg-linear-to-b from-zinc-900 to-zinc-800"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex-1 flex flex-col bg-white dark:bg-zinc-900"
                       >
                         {/* Call Header */}
                         <div className="flex-1 flex flex-col items-center justify-center p-8">
                           {/* AI Avatar */}
-                          <motion.div
-                            className="relative"
-                            animate={
-                              isCallActive ? { scale: [1, 1.05, 1] } : {}
-                            }
-                            transition={{
-                              duration: 2,
-                              repeat: Infinity,
-                              ease: "easeInOut",
-                            }}
-                          >
-                            {/* Pulsing rings */}
-                            {isCallActive && (
-                              <>
-                                <motion.div
-                                  className="absolute inset-0 rounded-full bg-white/10"
-                                  animate={{
-                                    scale: [1, 1.5],
-                                    opacity: [0.5, 0],
-                                  }}
-                                  transition={{
-                                    duration: 1.5,
-                                    repeat: Infinity,
-                                  }}
-                                  style={{
-                                    width: 120,
-                                    height: 120,
-                                    margin: -10,
-                                  }}
-                                />
-                                <motion.div
-                                  className="absolute inset-0 rounded-full bg-white/10"
-                                  animate={{
-                                    scale: [1, 1.8],
-                                    opacity: [0.3, 0],
-                                  }}
-                                  transition={{
-                                    duration: 1.5,
-                                    repeat: Infinity,
-                                    delay: 0.3,
-                                  }}
-                                  style={{
-                                    width: 120,
-                                    height: 120,
-                                    margin: -10,
-                                  }}
-                                />
-                              </>
-                            )}
-                            <div className="w-24 h-24 bg-zinc-700 rounded-full flex items-center justify-center border-4 border-zinc-600">
-                              <Bot className="w-12 h-12 text-zinc-300" />
+                          <div className="relative">
+                            <div className="w-24 h-24 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center border-2 border-zinc-200 dark:border-zinc-700">
+                              <Bot className="w-12 h-12 text-zinc-700 dark:text-zinc-300" />
                             </div>
-                          </motion.div>
+                          </div>
 
                           {/* Call Info */}
-                          <h4 className="text-xl font-bold text-white mt-6">
+                          <h4 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mt-6">
                             AI Code Assistant
                           </h4>
-                          <p className="text-zinc-400 text-sm mt-1">
+                          <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1">
                             {isCallActive ? "Connected" : "Connecting..."}
                           </p>
 
                           {/* Call Duration */}
                           {isCallActive && (
-                            <motion.p
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              className="text-zinc-300 text-2xl font-mono mt-4"
-                            >
+                            <p className="text-zinc-700 dark:text-zinc-300 text-2xl font-mono mt-4">
                               {formatDuration(callDuration)}
-                            </motion.p>
+                            </p>
                           )}
 
                           {/* Selected Files */}
-                          <div className="mt-6 px-4 py-2 bg-zinc-800/50 rounded-lg">
-                            <p className="text-xs text-zinc-500 mb-1">
+                          <div className="mt-6 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700">
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">
                               Discussing:
                             </p>
                             <div className="flex flex-wrap gap-1 justify-center">
                               {selectedFiles.map((file) => (
                                 <span
                                   key={file}
-                                  className="px-2 py-0.5 bg-zinc-700 rounded text-xs font-mono text-zinc-300"
+                                  className="px-2 py-0.5 bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 rounded text-xs font-mono text-zinc-700 dark:text-zinc-300"
                                 >
                                   {file.split("/").pop()}
                                 </span>
@@ -574,79 +523,61 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                             </div>
                           </div>
 
-                          {/* Voice Activity Indicator */}
+                          {/* Voice Activity Indicator - Static */}
                           {isCallActive && !isMuted && (
-                            <motion.div
-                              className="mt-6 flex items-center gap-1"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                            >
+                            <div className="mt-6 flex items-center gap-1">
                               {[...Array(5)].map((_, i) => (
-                                <motion.div
+                                <div
                                   key={i}
-                                  className="w-1 bg-green-500 rounded-full"
-                                  animate={{
-                                    height: [8, 20 + Math.random() * 12, 8],
-                                  }}
-                                  transition={{
-                                    duration: 0.5,
-                                    repeat: Infinity,
-                                    delay: i * 0.1,
-                                  }}
+                                  className="w-1 h-4 bg-green-500 rounded-full"
                                 />
                               ))}
-                            </motion.div>
+                            </div>
                           )}
                         </div>
 
                         {/* Call Controls */}
-                        <div className="p-6 bg-zinc-900/50">
+                        <div className="p-6 border-t border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50">
                           <div className="flex items-center justify-center gap-6">
                             {/* Mute Button */}
-                            <motion.button
+                            <button
                               onClick={() => setIsMuted(!isMuted)}
                               className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
                                 isMuted
-                                  ? "bg-red-500/20 text-red-400"
-                                  : "bg-zinc-700 text-white hover:bg-zinc-600"
+                                  ? "bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 border-2 border-red-300 dark:border-red-500"
+                                  : "bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-300 dark:hover:bg-zinc-600 border-2 border-zinc-300 dark:border-zinc-600"
                               }`}
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
                             >
                               {isMuted ? (
                                 <MicOff className="w-6 h-6" />
                               ) : (
                                 <Mic className="w-6 h-6" />
                               )}
-                            </motion.button>
+                            </button>
 
                             {/* End Call Button */}
-                            <motion.button
+                            <button
                               onClick={handleEndCall}
-                              className="w-16 h-16 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
+                              className="w-16 h-16 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors border-2 border-red-600"
                             >
                               <PhoneOff className="w-7 h-7" />
-                            </motion.button>
+                            </button>
 
                             {/* Speaker Button */}
-                            <motion.button
+                            <button
                               onClick={() => setIsSpeakerOn(!isSpeakerOn)}
                               className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
                                 !isSpeakerOn
-                                  ? "bg-red-500/20 text-red-400"
-                                  : "bg-zinc-700 text-white hover:bg-zinc-600"
+                                  ? "bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 border-2 border-red-300 dark:border-red-500"
+                                  : "bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-300 dark:hover:bg-zinc-600 border-2 border-zinc-300 dark:border-zinc-600"
                               }`}
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
                             >
                               {isSpeakerOn ? (
                                 <Volume2 className="w-6 h-6" />
                               ) : (
                                 <VolumeX className="w-6 h-6" />
                               )}
-                            </motion.button>
+                            </button>
                           </div>
 
                           {/* Switch to Chat */}
@@ -655,12 +586,12 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                               setIsCallActive(false);
                               setSelectedMode("chat");
                             }}
-                            className="mt-4 w-full text-center text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+                            className="mt-4 w-full text-center text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
                           >
                             Switch to Chat Mode
                           </button>
 
-                          <p className="text-xs text-zinc-600 mt-3 text-center">
+                          <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-3 text-center">
                             Demo interface - Voice functionality coming soon!
                           </p>
                         </div>
