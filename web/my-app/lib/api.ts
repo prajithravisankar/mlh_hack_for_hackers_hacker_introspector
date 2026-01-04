@@ -13,6 +13,19 @@ export interface SmartSummary {
   latex_code: string;
 }
 
+// FileNode type for file tree structure
+export interface FileNode {
+  name: string;
+  path: string;
+  type: "file" | "folder";
+  children?: FileNode[];
+}
+
+// FileTree response from API
+export interface FileTreeResponse {
+  tree: FileNode[];
+}
+
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -72,10 +85,23 @@ export async function generateSmartSummary(
   });
 }
 
+// Fetch repository file tree
+export async function fetchFileTree(
+  owner: string,
+  repo: string
+): Promise<FileNode[]> {
+  const response = await fetchAPI<FileTreeResponse>("/api/file-tree", {
+    method: "POST",
+    body: JSON.stringify({ owner, repo }),
+  });
+  return response.tree;
+}
+
 export const api = {
   analyzeRepository,
   getReport,
   generateSmartSummary,
+  fetchFileTree,
 };
 
 export default api;

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, Send, Bot, ArrowRight } from "lucide-react";
-import FileTree, { DUMMY_FILE_TREE } from "./FileTree";
+import { MessageSquare, Send, Bot, ArrowRight, AlertCircle } from "lucide-react";
+import FileTree from "./FileTree";
+import { fetchFileTree, FileNode } from "@/lib/api";
 
 interface TalkToRepoProps {
   repoName?: string;
@@ -11,10 +12,43 @@ interface TalkToRepoProps {
   repo?: string;
 }
 
-export default function TalkToRepo({ repoName }: TalkToRepoProps) {
+export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [chatStarted, setChatStarted] = useState(false);
+  
+  // File tree state
+  const [fileTree, setFileTree] = useState<FileNode[]>([]);
+  const [isLoadingTree, setIsLoadingTree] = useState(false);
+  const [treeError, setTreeError] = useState<string | null>(null);
+
+  // Fetch file tree when expanded
+  const loadFileTree = useCallback(async () => {
+    if (!owner || !repo) {
+      setTreeError("Repository information not available");
+      return;
+    }
+
+    setIsLoadingTree(true);
+    setTreeError(null);
+
+    try {
+      const tree = await fetchFileTree(owner, repo);
+      setFileTree(tree);
+    } catch (err) {
+      console.error("Failed to fetch file tree:", err);
+      setTreeError(err instanceof Error ? err.message : "Failed to load file tree");
+    } finally {
+      setIsLoadingTree(false);
+    }
+  }, [owner, repo]);
+
+  // Load file tree when panel is expanded
+  useEffect(() => {
+    if (isExpanded && fileTree.length === 0 && !isLoadingTree && !treeError) {
+      loadFileTree();
+    }
+  }, [isExpanded, fileTree.length, isLoadingTree, treeError, loadFileTree]);
 
   const handleToggle = () => {
     setIsExpanded(!isExpanded);
@@ -107,12 +141,28 @@ export default function TalkToRepo({ repoName }: TalkToRepoProps) {
               <div className="flex h-[500px]">
                 {/* Left Panel - File Tree */}
                 <div className="w-1/3 border-r border-zinc-200 dark:border-zinc-700 flex flex-col">
-                  <FileTree
-                    files={DUMMY_FILE_TREE}
-                    selectedFiles={selectedFiles}
-                    onSelectionChange={setSelectedFiles}
-                    maxSelections={3}
-                  />
+                  {treeError ? (
+                    <div className="flex-1 flex flex-col items-center justify-center p-4">
+                      <AlertCircle className="w-8 h-8 text-red-500 mb-3" />
+                      <p className="text-sm text-red-600 dark:text-red-400 text-center mb-3">
+                        {treeError}
+                      </p>
+                      <button
+                        onClick={loadFileTree}
+                        className="px-4 py-2 text-sm bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg hover:opacity-90 transition-opacity"
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  ) : (
+                    <FileTree
+                      files={fileTree}
+                      selectedFiles={selectedFiles}
+                      onSelectionChange={setSelectedFiles}
+                      maxSelections={3}
+                      isLoading={isLoadingTree}
+                    />
+                  )}
                 </div>
 
                 {/* Vertical Separator with Button */}

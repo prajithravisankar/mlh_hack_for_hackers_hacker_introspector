@@ -63,6 +63,7 @@ func main() {
 		api.POST("/analyze", handler.AnalyzeRepo)
 		api.GET("/report/:owner/:repo", handler.GetReport)
 		api.POST("/smart-summary", handler.SmartSummary)
+		api.POST("/file-tree", handler.GetFileTree)
 	}
 
 	log.Println("server started on port :8080...")

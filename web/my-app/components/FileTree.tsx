@@ -3,20 +3,17 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight, Folder, FolderOpen, File, Check } from "lucide-react";
+import { FileNode } from "@/lib/api";
 
-// Types for file tree structure
-export interface FileNode {
-  name: string;
-  path: string;
-  type: "file" | "folder";
-  children?: FileNode[];
-}
+// Re-export FileNode for backward compatibility
+export type { FileNode } from "@/lib/api";
 
 interface FileTreeProps {
   files: FileNode[];
   selectedFiles: string[];
   onSelectionChange: (files: string[]) => void;
   maxSelections?: number;
+  isLoading?: boolean;
 }
 
 interface FileItemProps {
@@ -26,99 +23,6 @@ interface FileItemProps {
   onToggle: (path: string) => void;
   isSelectable: boolean;
 }
-
-// Dummy data for the file tree
-export const DUMMY_FILE_TREE: FileNode[] = [
-  {
-    name: "src",
-    path: "src",
-    type: "folder",
-    children: [
-      {
-        name: "components",
-        path: "src/components",
-        type: "folder",
-        children: [
-          {
-            name: "Button.tsx",
-            path: "src/components/Button.tsx",
-            type: "file",
-          },
-          { name: "Card.tsx", path: "src/components/Card.tsx", type: "file" },
-          {
-            name: "Header.tsx",
-            path: "src/components/Header.tsx",
-            type: "file",
-          },
-          {
-            name: "Footer.tsx",
-            path: "src/components/Footer.tsx",
-            type: "file",
-          },
-          { name: "Modal.tsx", path: "src/components/Modal.tsx", type: "file" },
-        ],
-      },
-      {
-        name: "hooks",
-        path: "src/hooks",
-        type: "folder",
-        children: [
-          { name: "useAuth.ts", path: "src/hooks/useAuth.ts", type: "file" },
-          { name: "useApi.ts", path: "src/hooks/useApi.ts", type: "file" },
-          {
-            name: "useDebounce.ts",
-            path: "src/hooks/useDebounce.ts",
-            type: "file",
-          },
-        ],
-      },
-      {
-        name: "utils",
-        path: "src/utils",
-        type: "folder",
-        children: [
-          { name: "helpers.ts", path: "src/utils/helpers.ts", type: "file" },
-          {
-            name: "constants.ts",
-            path: "src/utils/constants.ts",
-            type: "file",
-          },
-          { name: "api.ts", path: "src/utils/api.ts", type: "file" },
-        ],
-      },
-      { name: "App.tsx", path: "src/App.tsx", type: "file" },
-      { name: "index.tsx", path: "src/index.tsx", type: "file" },
-      { name: "types.ts", path: "src/types.ts", type: "file" },
-    ],
-  },
-  {
-    name: "tests",
-    path: "tests",
-    type: "folder",
-    children: [
-      { name: "App.test.tsx", path: "tests/App.test.tsx", type: "file" },
-      { name: "utils.test.ts", path: "tests/utils.test.ts", type: "file" },
-      { name: "setup.ts", path: "tests/setup.ts", type: "file" },
-    ],
-  },
-  {
-    name: "config",
-    path: "config",
-    type: "folder",
-    children: [
-      {
-        name: "webpack.config.js",
-        path: "config/webpack.config.js",
-        type: "file",
-      },
-      { name: "jest.config.js", path: "config/jest.config.js", type: "file" },
-    ],
-  },
-  { name: "package.json", path: "package.json", type: "file" },
-  { name: "tsconfig.json", path: "tsconfig.json", type: "file" },
-  { name: "README.md", path: "README.md", type: "file" },
-  { name: ".gitignore", path: ".gitignore", type: "file" },
-];
 
 // Individual file/folder item component
 function FileItem({
@@ -263,6 +167,7 @@ export default function FileTree({
   selectedFiles,
   onSelectionChange,
   maxSelections = 3,
+  isLoading = false,
 }: FileTreeProps) {
   const isSelectable = selectedFiles.length < maxSelections;
 
@@ -317,16 +222,32 @@ export default function FileTree({
 
       {/* File Tree */}
       <div className="flex-1 overflow-auto p-2">
-        {files.map((node) => (
-          <FileItem
-            key={node.path}
-            node={node}
-            depth={0}
-            selectedFiles={selectedFiles}
-            onToggle={handleToggle}
-            isSelectable={isSelectable}
-          />
-        ))}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center h-full py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-zinc-900 dark:border-zinc-100 mb-4" />
+            <p className="text-sm font-mono text-zinc-500 dark:text-zinc-400">
+              Loading file tree...
+            </p>
+          </div>
+        ) : files.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full py-8">
+            <Folder className="w-12 h-12 text-zinc-300 dark:text-zinc-600 mb-4" />
+            <p className="text-sm font-mono text-zinc-500 dark:text-zinc-400">
+              No files found
+            </p>
+          </div>
+        ) : (
+          files.map((node) => (
+            <FileItem
+              key={node.path}
+              node={node}
+              depth={0}
+              selectedFiles={selectedFiles}
+              onToggle={handleToggle}
+              isSelectable={isSelectable}
+            />
+          ))
+        )}
       </div>
 
       {/* Footer hint */}

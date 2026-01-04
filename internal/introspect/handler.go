@@ -32,6 +32,7 @@ type SmartSummaryRequest struct {
 	Repo  string `json:"repo" binding:"required"`
 }
 
+// AnalyzeRepo handles the analysis of a repository
 func (h *Handler) AnalyzeRepo(c *gin.Context) {
 	var req AnalyzeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -105,4 +106,33 @@ func (h *Handler) SmartSummary(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, summary)
+}
+
+// FileTreeRequest represents the request for fetching file tree
+type FileTreeRequest struct {
+	Owner string `json:"owner" binding:"required"`
+	Repo  string `json:"repo" binding:"required"`
+}
+
+// GetFileTree fetches the file tree structure of a repository
+func (h *Handler) GetFileTree(c *gin.Context) {
+	var req FileTreeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request. Required: owner and repo"})
+		return
+	}
+
+	fmt.Printf("Fetching file tree for %s/%s...\n", req.Owner, req.Repo)
+
+	fileTree, err := h.githubClient.FetchFileTree(req.Owner, req.Repo)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"tree": fileTree,
+	})
 }

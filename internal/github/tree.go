@@ -3,6 +3,7 @@ package github
 import (
 	"encoding/base64"
 	"fmt"
+	"strings"
 )
 
 // TreeEntry represents a single file/folder in the repo tree
@@ -123,4 +124,96 @@ func (t *TreeResponse) GetTreeAsString() string {
 		}
 	}
 	return result
+}
+
+// FileNode represents a node in the file tree structure (for frontend)
+type FileNode struct {
+	Name     string     `json:"name"`
+	Path     string     `json:"path"`
+	Type     string     `json:"type"` // "file" or "folder"
+	Children []FileNode `json:"children,omitempty"`
+}
+
+// FetchFileTree fetches the complete file tree for a repository and returns it as a hierarchical structure
+func (c *Client) FetchFileTree(owner, repo string) ([]FileNode, error) {
+	// Use the existing FetchRepoTree method
+	treeResp, err := c.FetchRepoTree(owner, repo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch tree: %w", err)
+	}
+
+	// Build the hierarchical tree structure
+	return buildFileTree(treeResp.Tree), nil
+}
+
+// buildFileTree converts flat GitHub tree entries into a hierarchical structure
+func buildFileTree(entries []TreeEntry) []FileNode {
+	// Create a map to store nodes by path
+	nodeMap := make(map[string]*FileNode)
+	var rootNodes []FileNode
+
+	// First pass: create all nodes
+	for _, entry := range entries {
+		nodeType := "file"
+		if entry.Type == "tree" {
+			nodeType = "folder"
+		}
+
+		// Get the name from the path
+		parts := strings.Split(entry.Path, "/")
+		name := parts[len(parts)-1]
+
+		node := &FileNode{
+			Name: name,
+			Path: entry.Path,
+			Type: nodeType,
+		}
+
+		if nodeType == "folder" {
+			node.Children = []FileNode{}
+		}
+
+		nodeMap[entry.Path] = node
+	}
+
+	// Second pass: build hierarchy
+	for _, entry := range entries {
+		parts := strings.Split(entry.Path, "/")
+
+		if len(parts) == 1 {
+			// Root level item
+			rootNodes = append(rootNodes, *nodeMap[entry.Path])
+		} else {
+			// Find parent path
+			parentPath := strings.Join(parts[:len(parts)-1], "/")
+			if parent, exists := nodeMap[parentPath]; exists {
+				parent.Children = append(parent.Children, *nodeMap[entry.Path])
+			}
+		}
+	}
+
+	// Sort and clean up - folders first, then files, alphabetically
+	sortFileNodes(rootNodes)
+
+	return rootNodes
+}
+
+// sortFileNodes sorts file nodes: folders first, then files, both alphabetically
+func sortFileNodes(nodes []FileNode) {
+	// Sort current level
+	for i := 0; i < len(nodes); i++ {
+		for j := i + 1; j < len(nodes); j++ {
+			// Folders come before files
+			if nodes[j].Type == "folder" && nodes[i].Type == "file" {
+				nodes[i], nodes[j] = nodes[j], nodes[i]
+			} else if nodes[i].Type == nodes[j].Type && nodes[i].Name > nodes[j].Name {
+				// Same type, sort alphabetically
+				nodes[i], nodes[j] = nodes[j], nodes[i]
+			}
+		}
+		// Recursively sort children
+		if nodes[i].Type == "folder" && len(nodes[i].Children) > 0 {
+			sortFileNodes(nodes[i].Children)
+		}
+	}
 }
