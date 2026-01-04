@@ -49,9 +49,8 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
   const [inputValue, setInputValue] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [shouldStop, setShouldStop] = useState(false);
+  const shouldStopRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Voice call state
   const [isMuted, setIsMuted] = useState(false);
@@ -177,11 +176,24 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
 
   // Add messages with dynamic typing animation and random delays (1-3 seconds)
   const addMessagesWithTyping = async (chunks: string[]) => {
+    // Helper to sleep with cancellation check
+    const sleep = (ms: number) => {
+      return new Promise<boolean>((resolve) => {
+        const timeout = setTimeout(() => {
+          resolve(!shouldStopRef.current); // Return true if should continue
+        }, ms);
+        
+        // Store timeout so we can clear it if needed
+        if (shouldStopRef.current) {
+          clearTimeout(timeout);
+          resolve(false);
+        }
+      });
+    };
+
     for (let i = 0; i < chunks.length; i++) {
-      // Check if user wants to stop
-      if (shouldStop) {
-        setShouldStop(false);
-        setIsTyping(false);
+      // Check if user wants to stop immediately
+      if (shouldStopRef.current) {
         break;
       }
 
@@ -189,11 +201,9 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
 
       // Random typing delay between 1-3 seconds (1000-3000ms)
       const typingDelay = 1000 + Math.random() * 2000;
-      await new Promise((resolve) => setTimeout(resolve, typingDelay));
-
-      // Check again after delay
-      if (shouldStop) {
-        setShouldStop(false);
+      const shouldContinue = await sleep(typingDelay);
+      
+      if (!shouldContinue) {
         setIsTyping(false);
         break;
       }
@@ -207,14 +217,23 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
       // Random delay between chunks (1-3 seconds)
       if (i < chunks.length - 1) {
         const betweenDelay = 1000 + Math.random() * 2000;
-        await new Promise((resolve) => setTimeout(resolve, betweenDelay));
+        const shouldContinueAfterMessage = await sleep(betweenDelay);
+        
+        if (!shouldContinueAfterMessage) {
+          break;
+        }
       }
     }
+    
+    // Clean up
+    setIsTyping(false);
+    setIsSending(false);
+    shouldStopRef.current = false;
   };
 
   // Handle stopping the AI response
   const handleStopResponse = () => {
-    setShouldStop(true);
+    shouldStopRef.current = true;
     setIsTyping(false);
     setIsSending(false);
   };
@@ -225,7 +244,7 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
 
     const userMessage = inputValue.trim();
     setInputValue("");
-    setShouldStop(false); // Reset stop flag
+    shouldStopRef.current = false; // Reset stop flag
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setIsSending(true);
 
