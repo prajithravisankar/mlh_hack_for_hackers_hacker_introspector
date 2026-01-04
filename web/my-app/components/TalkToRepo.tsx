@@ -141,28 +141,56 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
     setShowModeSelection(false);
   };
 
-  // Split response into sentences (max 3)
-  const splitIntoSentences = (text: string): string[] => {
+  // Split response into chunks of 1-2 sentences for human-like delivery
+  // Chunk response into 1-2 sentences per bubble
+  const chunkResponse = (text: string): string[] => {
+    // Split by sentences
     const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-    return sentences.slice(0, 3).map((s) => s.trim());
+    const chunks: string[] = [];
+
+    // Group into 1-2 sentences per chunk for natural conversation flow
+    for (let i = 0; i < sentences.length; i++) {
+      const sentence = sentences[i].trim();
+
+      // If we have a next sentence and combined is not too long, pair them
+      if (i < sentences.length - 1) {
+        const nextSentence = sentences[i + 1].trim();
+        const combined = sentence + " " + nextSentence;
+
+        // Pair if combined is under 200 chars
+        if (combined.length < 200) {
+          chunks.push(combined);
+          i++; // Skip next sentence since we combined it
+        } else {
+          chunks.push(sentence);
+        }
+      } else {
+        chunks.push(sentence);
+      }
+    }
+
+    return chunks;
   };
 
-  // Add messages with typing animation
-  const addMessagesWithTyping = async (sentences: string[]) => {
-    for (let i = 0; i < sentences.length; i++) {
+  // Add messages with dynamic typing animation and random delays (1-3 seconds)
+  const addMessagesWithTyping = async (chunks: string[]) => {
+    for (let i = 0; i < chunks.length; i++) {
       setIsTyping(true);
-      await new Promise((resolve) =>
-        setTimeout(resolve, 600 + Math.random() * 400)
-      );
+
+      // Random typing delay between 1-3 seconds (1000-3000ms)
+      const typingDelay = 1000 + Math.random() * 2000;
+      await new Promise((resolve) => setTimeout(resolve, typingDelay));
 
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: sentences[i] },
+        { role: "assistant", content: chunks[i] },
       ]);
       setIsTyping(false);
 
-      if (i < sentences.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 200));
+      // Random delay between chunks (1-3 seconds)
+      if (i < chunks.length - 1) {
+        const betweenDelay = 1000 + Math.random() * 2000;
+        await new Promise((resolve) => setTimeout(resolve, betweenDelay));
       }
     }
   };
@@ -185,8 +213,8 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
         messages
       );
 
-      const sentences = splitIntoSentences(response.response);
-      await addMessagesWithTyping(sentences);
+      const chunks = chunkResponse(response.response);
+      await addMessagesWithTyping(chunks);
     } catch (err) {
       console.error("Chat error:", err);
       setMessages((prev) => [

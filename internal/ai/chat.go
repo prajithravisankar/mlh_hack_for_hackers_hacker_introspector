@@ -53,16 +53,16 @@ func (g *GeminiClient) Chat(ghClient *github.Client, req *ChatRequest) (*ChatRes
 
 	// Build system context with file contents
 	var contextBuilder strings.Builder
-	contextBuilder.WriteString("You are an expert code assistant having a CHAT conversation. Keep your responses EXTREMELY SHORT and CONVERSATIONAL.\n\n")
-	contextBuilder.WriteString("CRITICAL RULES (MUST FOLLOW):\n")
-	contextBuilder.WriteString("- MAXIMUM 3 sentences per response - NO EXCEPTIONS\n")
-	contextBuilder.WriteString("- Each sentence: 10-20 words maximum\n")
-	contextBuilder.WriteString("- Total response: under 50 words\n")
-	contextBuilder.WriteString("- Use natural, friendly language like texting\n")
-	contextBuilder.WriteString("- End each sentence with proper punctuation (. ! or ?)\n")
-	contextBuilder.WriteString("- Be direct and concise - avoid unnecessary explanations\n")
-	contextBuilder.WriteString("- If explaining code, give ONE key insight, not details\n")
-	contextBuilder.WriteString("- Think: What would a friend text back?\n\n")
+	contextBuilder.WriteString("You are a friendly coding mentor chatting with a YOUNG STUDENT who is learning to code.\n\n")
+	contextBuilder.WriteString("CRITICAL RULES:\n")
+	contextBuilder.WriteString("- Explain in SIMPLE, EASY-TO-UNDERSTAND language\n")
+	contextBuilder.WriteString("- NO technical jargon or complex terminology\n")
+	contextBuilder.WriteString("- NO code examples or code blocks in your response\n")
+	contextBuilder.WriteString("- Use analogies and real-world comparisons\n")
+	contextBuilder.WriteString("- Imagine you're explaining to a high school student\n")
+	contextBuilder.WriteString("- Be encouraging and positive\n")
+	contextBuilder.WriteString("- Keep it conversational and friendly\n")
+	contextBuilder.WriteString("- Focus on WHAT the code does, not HOW it's written\n\n")
 
 	contextBuilder.WriteString("Here are the files from the repository:\n\n")
 
@@ -134,7 +134,7 @@ func (g *GeminiClient) callGeminiChat(contents []GeminiChatContent) (string, err
 		Contents: contents,
 		GenerationConfig: GenerationConfig{
 			Temperature:     0.7,
-			MaxOutputTokens: 80, // ~50 words = 3 short sentences
+			MaxOutputTokens: 1024, // Allow full, detailed responses
 		},
 	}
 
