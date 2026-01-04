@@ -2,7 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, Send, Bot, ArrowRight, AlertCircle } from "lucide-react";
+import {
+  MessageSquare,
+  Send,
+  Bot,
+  ArrowRight,
+  AlertCircle,
+} from "lucide-react";
 import FileTree from "./FileTree";
 import { fetchFileTree, FileNode } from "@/lib/api";
 
@@ -16,7 +22,7 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [chatStarted, setChatStarted] = useState(false);
-  
+
   // File tree state
   const [fileTree, setFileTree] = useState<FileNode[]>([]);
   const [isLoadingTree, setIsLoadingTree] = useState(false);
@@ -37,7 +43,9 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
       setFileTree(tree);
     } catch (err) {
       console.error("Failed to fetch file tree:", err);
-      setTreeError(err instanceof Error ? err.message : "Failed to load file tree");
+      setTreeError(
+        err instanceof Error ? err.message : "Failed to load file tree"
+      );
     } finally {
       setIsLoadingTree(false);
     }

@@ -148,11 +148,19 @@ func (c *Client) FetchFileTree(owner, repo string) ([]FileNode, error) {
 
 // buildFileTree converts flat GitHub tree entries into a hierarchical structure
 func buildFileTree(entries []TreeEntry) []FileNode {
-	// Create a map to store nodes by path
+	// Create a map to store nodes by path (using pointers)
 	nodeMap := make(map[string]*FileNode)
-	var rootNodes []FileNode
+	
+	// Root node to collect top-level items
+	root := &FileNode{
+		Name:     "",
+		Path:     "",
+		Type:     "folder",
+		Children: []FileNode{},
+	}
+	nodeMap[""] = root
 
-	// First pass: create all nodes
+	// First pass: create all nodes and ensure parent folders exist
 	for _, entry := range entries {
 		nodeType := "file"
 		if entry.Type == "tree" {
@@ -164,9 +172,10 @@ func buildFileTree(entries []TreeEntry) []FileNode {
 		name := parts[len(parts)-1]
 
 		node := &FileNode{
-			Name: name,
-			Path: entry.Path,
-			Type: nodeType,
+			Name:     name,
+			Path:     entry.Path,
+			Type:     nodeType,
+			Children: nil,
 		}
 
 		if nodeType == "folder" {
@@ -176,26 +185,65 @@ func buildFileTree(entries []TreeEntry) []FileNode {
 		nodeMap[entry.Path] = node
 	}
 
-	// Second pass: build hierarchy
+	// Second pass: build hierarchy by linking children to parents
 	for _, entry := range entries {
 		parts := strings.Split(entry.Path, "/")
-
+		
+		var parentPath string
 		if len(parts) == 1 {
-			// Root level item
-			rootNodes = append(rootNodes, *nodeMap[entry.Path])
+			parentPath = "" // Root level
 		} else {
-			// Find parent path
-			parentPath := strings.Join(parts[:len(parts)-1], "/")
-			if parent, exists := nodeMap[parentPath]; exists {
-				parent.Children = append(parent.Children, *nodeMap[entry.Path])
-			}
+			parentPath = strings.Join(parts[:len(parts)-1], "/")
 		}
+
+		// Get parent node
+		parent, parentExists := nodeMap[parentPath]
+		if !parentExists {
+			// Parent doesn't exist (shouldn't happen with recursive tree), use root
+			parent = root
+		}
+
+		// Get current node
+		currentNode := nodeMap[entry.Path]
+		
+		// Append to parent's children
+		parent.Children = append(parent.Children, *currentNode)
 	}
 
-	// Sort and clean up - folders first, then files, alphabetically
-	sortFileNodes(rootNodes)
+	// Now we need to rebuild with updated children
+	// The issue is that when we append currentNode to parent.Children,
+	// we're copying the value at that moment, so we need to do a final rebuild
+	
+	return buildTreeRecursive(root.Children, nodeMap)
+}
 
-	return rootNodes
+// buildTreeRecursive rebuilds the tree with proper nested children
+func buildTreeRecursive(nodes []FileNode, nodeMap map[string]*FileNode) []FileNode {
+	result := make([]FileNode, 0, len(nodes))
+	
+	for _, node := range nodes {
+		newNode := FileNode{
+			Name: node.Name,
+			Path: node.Path,
+			Type: node.Type,
+		}
+		
+		if node.Type == "folder" {
+			// Get the actual children from the map
+			if mapNode, exists := nodeMap[node.Path]; exists && len(mapNode.Children) > 0 {
+				newNode.Children = buildTreeRecursive(mapNode.Children, nodeMap)
+			} else {
+				newNode.Children = []FileNode{}
+			}
+		}
+		
+		result = append(result, newNode)
+	}
+	
+	// Sort: folders first, then files, both alphabetically
+	sortFileNodes(result)
+	
+	return result
 }
 
 // sortFileNodes sorts file nodes: folders first, then files, both alphabetically
