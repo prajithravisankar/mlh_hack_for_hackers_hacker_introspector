@@ -15,10 +15,17 @@ import {
   VolumeX,
   MessageCircle,
   Square,
+  Loader2,
 } from "lucide-react";
 import { AiFillGoogleCircle } from "react-icons/ai";
 import FileTree from "./FileTree";
-import { fetchFileTree, chatWithRepo, FileNode } from "@/lib/api";
+import {
+  fetchFileTree,
+  chatWithRepo,
+  voiceChatWithRepo,
+  FileNode,
+  ChatMessage as ApiChatMessage,
+} from "@/lib/api";
 
 type InteractionMode = "chat" | "talk" | null;
 
@@ -58,10 +65,21 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
   const [callDuration, setCallDuration] = useState(0);
   const [isCallActive, setIsCallActive] = useState(false);
 
+  // Voice conversation state
+  const [voiceHistory, setVoiceHistory] = useState<ChatMessage[]>([]);
+  const [isAISpeaking, setIsAISpeaking] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [currentTranscript, setCurrentTranscript] = useState("");
+  const [voiceStatus, setVoiceStatus] = useState<string>("Ready to start");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isProcessingRef = useRef(false);
+
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
+  }, [messages, isTyping, voiceHistory, currentTranscript]);
 
   // Call duration timer
   useEffect(() => {
@@ -129,19 +147,279 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
     if (mode === "talk") {
       setIsCallActive(true);
       setCallDuration(0);
+      setVoiceHistory([]);
+      setVoiceStatus("Connecting...");
+      // Start the call with AI greeting
+      startVoiceConversation();
     }
   };
 
   const handleEndCall = () => {
+    // Stop any ongoing speech recognition
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    // Stop any playing audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
     setIsCallActive(false);
     setSelectedMode(null);
     setCallDuration(0);
+    setVoiceHistory([]);
+    setIsAISpeaking(false);
+    setIsListening(false);
+    setCurrentTranscript("");
+    setVoiceStatus("Call ended");
+    isProcessingRef.current = false;
   };
 
   const handleBackToSelection = () => {
     setSelectedMode(null);
     setShowModeSelection(false);
   };
+
+  // ============ VOICE CONVERSATION FUNCTIONS ============
+
+  // Initialize speech recognition
+  const initSpeechRecognition = useCallback(() => {
+    if (typeof window === "undefined") return null;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      console.error("Speech recognition not supported");
+      setVoiceStatus("Speech recognition not supported in this browser");
+      return null;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      setVoiceStatus("Listening...");
+    };
+
+    recognition.onresult = (event: any) => {
+      let transcript = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setCurrentTranscript(transcript);
+
+      // If this is a final result, process it
+      if (event.results[event.results.length - 1].isFinal) {
+        handleUserSpeech(transcript);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error:", event.error);
+      setIsListening(false);
+      if (event.error !== "no-speech") {
+        setVoiceStatus(`Error: ${event.error}`);
+      }
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      // Don't auto-restart if we're processing or AI is speaking
+      if (!isProcessingRef.current && !isAISpeaking && isCallActive) {
+        setVoiceStatus("Tap mic to speak");
+      }
+    };
+
+    return recognition;
+  }, [isAISpeaking, isCallActive]);
+
+  // Start listening for user speech
+  const startListening = useCallback(() => {
+    if (isAISpeaking || isProcessingRef.current || isMuted) return;
+
+    if (!recognitionRef.current) {
+      recognitionRef.current = initSpeechRecognition();
+    }
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.start();
+        setCurrentTranscript("");
+      } catch (err) {
+        console.error("Failed to start recognition:", err);
+      }
+    }
+  }, [isAISpeaking, isMuted, initSpeechRecognition]);
+
+  // Stop listening
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current && isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
+  }, [isListening]);
+
+  // Handle user's spoken input
+  const handleUserSpeech = async (transcript: string) => {
+    if (!transcript.trim() || !owner || !repo || isProcessingRef.current)
+      return;
+
+    isProcessingRef.current = true;
+    stopListening();
+    setVoiceStatus("Processing...");
+
+    // Add user message to history
+    const userMessage: ChatMessage = {
+      role: "user",
+      content: transcript.trim(),
+    };
+    const newHistory = [...voiceHistory, userMessage];
+    setVoiceHistory(newHistory);
+    setCurrentTranscript("");
+
+    try {
+      // Get AI response with audio
+      setVoiceStatus("AI is thinking...");
+      const response = await voiceChatWithRepo(
+        owner,
+        repo,
+        selectedFiles,
+        transcript.trim(),
+        newHistory.slice(0, -1) // Send history without the current message
+      );
+
+      // Add AI response to history
+      const aiMessage: ChatMessage = {
+        role: "assistant",
+        content: response.response,
+      };
+      setVoiceHistory([...newHistory, aiMessage]);
+
+      // Play audio if available
+      if (response.audio && audioRef.current && isSpeakerOn) {
+        setIsAISpeaking(true);
+        setVoiceStatus("AI is speaking...");
+
+        const audioSrc = `data:audio/mpeg;base64,${response.audio}`;
+        audioRef.current.src = audioSrc;
+
+        audioRef.current.onended = () => {
+          setIsAISpeaking(false);
+          isProcessingRef.current = false;
+          setVoiceStatus("Tap mic to speak");
+          // Auto-start listening after AI finishes
+          if (isCallActive && !isMuted) {
+            setTimeout(() => startListening(), 500);
+          }
+        };
+
+        audioRef.current.onerror = () => {
+          console.error("Audio playback error");
+          setIsAISpeaking(false);
+          isProcessingRef.current = false;
+          setVoiceStatus("Tap mic to speak");
+        };
+
+        await audioRef.current.play();
+      } else {
+        // No audio, just show the response
+        setIsAISpeaking(false);
+        isProcessingRef.current = false;
+        setVoiceStatus("Tap mic to speak");
+      }
+    } catch (error) {
+      console.error("Voice chat error:", error);
+      setVoiceStatus("Error - tap mic to retry");
+      isProcessingRef.current = false;
+    }
+  };
+
+  // Start the voice conversation with AI greeting
+  const startVoiceConversation = async () => {
+    if (!owner || !repo) return;
+
+    isProcessingRef.current = true;
+    setVoiceStatus("AI is greeting you...");
+
+    try {
+      // Ask AI to introduce itself and ask what the user wants to know
+      const greetingPrompt =
+        "Please introduce yourself briefly and ask what the user would like to know about the selected files.";
+
+      const response = await voiceChatWithRepo(
+        owner,
+        repo,
+        selectedFiles,
+        greetingPrompt,
+        []
+      );
+
+      // Add AI greeting to history
+      const aiMessage: ChatMessage = {
+        role: "assistant",
+        content: response.response,
+      };
+      setVoiceHistory([aiMessage]);
+
+      // Play greeting audio
+      if (response.audio && audioRef.current && isSpeakerOn) {
+        setIsAISpeaking(true);
+        setVoiceStatus("AI is speaking...");
+
+        const audioSrc = `data:audio/mpeg;base64,${response.audio}`;
+        audioRef.current.src = audioSrc;
+
+        audioRef.current.onended = () => {
+          setIsAISpeaking(false);
+          isProcessingRef.current = false;
+          setVoiceStatus("Tap mic to speak");
+          // Auto-start listening after greeting
+          if (isCallActive && !isMuted) {
+            setTimeout(() => startListening(), 500);
+          }
+        };
+
+        audioRef.current.onerror = () => {
+          console.error("Audio playback error");
+          setIsAISpeaking(false);
+          isProcessingRef.current = false;
+          setVoiceStatus("Tap mic to speak");
+        };
+
+        await audioRef.current.play();
+      } else {
+        setIsAISpeaking(false);
+        isProcessingRef.current = false;
+        setVoiceStatus("Tap mic to speak");
+      }
+    } catch (error) {
+      console.error("Failed to start voice conversation:", error);
+      setVoiceStatus("Failed to connect - tap mic to retry");
+      isProcessingRef.current = false;
+    }
+  };
+
+  // Toggle mute - stop/start listening
+  const handleMuteToggle = () => {
+    if (isMuted) {
+      setIsMuted(false);
+      // Resume listening if AI isn't speaking
+      if (!isAISpeaking && !isProcessingRef.current) {
+        setTimeout(() => startListening(), 300);
+      }
+    } else {
+      setIsMuted(true);
+      stopListening();
+    }
+  };
+
+  // ============ END VOICE CONVERSATION FUNCTIONS ============
 
   // Split response into chunks of 1-2 sentences for human-like delivery
   // Chunk response into 1-2 sentences per bubble
@@ -182,7 +460,7 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
         const timeout = setTimeout(() => {
           resolve(!shouldStopRef.current); // Return true if should continue
         }, ms);
-        
+
         // Store timeout so we can clear it if needed
         if (shouldStopRef.current) {
           clearTimeout(timeout);
@@ -202,7 +480,7 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
       // Random typing delay between 1-3 seconds (1000-3000ms)
       const typingDelay = 1000 + Math.random() * 2000;
       const shouldContinue = await sleep(typingDelay);
-      
+
       if (!shouldContinue) {
         setIsTyping(false);
         break;
@@ -218,13 +496,13 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
       if (i < chunks.length - 1) {
         const betweenDelay = 1000 + Math.random() * 2000;
         const shouldContinueAfterMessage = await sleep(betweenDelay);
-        
+
         if (!shouldContinueAfterMessage) {
           break;
         }
       }
     }
-    
+
     // Clean up
     setIsTyping(false);
     setIsSending(false);
@@ -713,7 +991,7 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                       </motion.div>
                     )}
 
-                    {/* Voice Call Interface (WhatsApp Style) */}
+                    {/* Voice Call Interface (Real-time Conversation) */}
                     {selectedMode === "talk" && (
                       <motion.div
                         key="voice-interface"
@@ -721,120 +999,344 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="flex-1 flex flex-col bg-white dark:bg-zinc-900"
+                        className="flex-1 flex flex-col bg-gradient-to-b from-zinc-900 to-zinc-800 min-h-0"
                       >
+                        {/* Hidden audio element */}
+                        <audio ref={audioRef} className="hidden" />
+
                         {/* Call Header */}
-                        <div className="flex-1 flex flex-col items-center justify-center p-8">
-                          {/* AI Avatar */}
-                          <div className="relative">
-                            <div className="w-24 h-24 bg-blue-100 dark:bg-blue-900/20 rounded-xl flex items-center justify-center border-2 border-blue-200 dark:border-blue-800">
-                              <AiFillGoogleCircle className="w-14 h-14 text-blue-500" />
+                        <div className="px-4 py-3 border-b border-zinc-700 bg-zinc-900/80 flex items-center justify-between shrink-0">
+                          <div className="flex items-center gap-3">
+                            <div className="relative">
+                              <div
+                                className={`w-3 h-3 rounded-full ${
+                                  isCallActive
+                                    ? "bg-green-500"
+                                    : "bg-yellow-500"
+                                }`}
+                              />
+                              {isCallActive && (
+                                <div className="absolute inset-0 w-3 h-3 rounded-full bg-green-500 animate-ping opacity-75" />
+                              )}
                             </div>
+                            <span className="text-sm font-medium text-zinc-300">
+                              {isCallActive
+                                ? `Call Active • ${formatDuration(
+                                    callDuration
+                                  )}`
+                                : "Connecting..."}
+                            </span>
                           </div>
+                          <button
+                            onClick={handleEndCall}
+                            className="px-3 py-1.5 text-xs bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                          >
+                            End Call
+                          </button>
+                        </div>
 
-                          {/* Call Info */}
-                          <h4 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mt-6">
-                            AI Code Assistant
-                          </h4>
-                          <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1">
-                            {isCallActive ? "Connected" : "Connecting..."}
-                          </p>
-
-                          {/* Call Duration */}
-                          {isCallActive && (
-                            <p className="text-zinc-700 dark:text-zinc-300 text-2xl font-mono mt-4">
-                              {formatDuration(callDuration)}
-                            </p>
-                          )}
-
-                          {/* Selected Files */}
-                          <div className="mt-6 px-4 py-2 bg-zinc-100 dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700">
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">
-                              Discussing:
-                            </p>
-                            <div className="flex flex-wrap gap-1 justify-center">
-                              {selectedFiles.map((file) => (
-                                <span
-                                  key={file}
-                                  className="px-2 py-0.5 bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 rounded text-xs font-mono text-zinc-700 dark:text-zinc-300"
-                                >
-                                  {file.split("/").pop()}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Voice Activity Indicator - Static */}
-                          {isCallActive && !isMuted && (
-                            <div className="mt-6 flex items-center gap-1">
-                              {[...Array(5)].map((_, i) => (
-                                <div
-                                  key={i}
-                                  className="w-1 h-4 bg-green-500 rounded-full"
+                        {/* Conversation History */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
+                          {/* AI Avatar and status at top */}
+                          <div className="flex flex-col items-center pb-4 border-b border-zinc-700/50 mb-4">
+                            <div className="relative mb-3">
+                              <div
+                                className={`w-16 h-16 rounded-full flex items-center justify-center border-2 transition-colors ${
+                                  isAISpeaking
+                                    ? "bg-blue-500/20 border-blue-400"
+                                    : isListening
+                                    ? "bg-green-500/20 border-green-400"
+                                    : "bg-zinc-700 border-zinc-600"
+                                }`}
+                              >
+                                <AiFillGoogleCircle
+                                  className={`w-10 h-10 ${
+                                    isAISpeaking
+                                      ? "text-blue-400"
+                                      : isListening
+                                      ? "text-green-400"
+                                      : "text-zinc-400"
+                                  }`}
                                 />
-                              ))}
+                              </div>
+                              {/* Speaking/Listening Animation */}
+                              {(isAISpeaking || isListening) && (
+                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
+                                  {[...Array(5)].map((_, i) => (
+                                    <motion.div
+                                      key={i}
+                                      className={`w-1 rounded-full ${
+                                        isAISpeaking
+                                          ? "bg-blue-400"
+                                          : "bg-green-400"
+                                      }`}
+                                      animate={{
+                                        height: [4, 12 + Math.random() * 8, 4],
+                                      }}
+                                      transition={{
+                                        duration: 0.4,
+                                        repeat: Infinity,
+                                        delay: i * 0.1,
+                                        ease: "easeInOut",
+                                      }}
+                                    />
+                                  ))}
+                                </div>
+                              )}
                             </div>
+                            <p className="text-sm font-medium text-zinc-300">
+                              AI Code Assistant
+                            </p>
+                            <p
+                              className={`text-xs mt-1 ${
+                                isAISpeaking
+                                  ? "text-blue-400"
+                                  : isListening
+                                  ? "text-green-400"
+                                  : "text-zinc-500"
+                              }`}
+                            >
+                              {voiceStatus}
+                            </p>
+                          </div>
+
+                          {/* Voice Conversation Messages */}
+                          <AnimatePresence mode="popLayout">
+                            {voiceHistory.map((message, index) => (
+                              <motion.div
+                                key={`voice-${index}`}
+                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                transition={{ duration: 0.3 }}
+                                className={`flex gap-3 ${
+                                  message.role === "user"
+                                    ? "flex-row-reverse"
+                                    : ""
+                                }`}
+                              >
+                                {message.role === "assistant" && (
+                                  <div className="w-7 h-7 bg-blue-500/20 border border-blue-500/50 rounded-full flex items-center justify-center shrink-0">
+                                    <AiFillGoogleCircle className="w-4 h-4 text-blue-400" />
+                                  </div>
+                                )}
+                                <div
+                                  className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
+                                    message.role === "user"
+                                      ? "bg-green-600 text-white rounded-br-md"
+                                      : "bg-zinc-700 text-zinc-100 rounded-bl-md"
+                                  }`}
+                                >
+                                  <p className="text-sm leading-relaxed">
+                                    {message.content}
+                                  </p>
+                                </div>
+                                {message.role === "user" && (
+                                  <div className="w-7 h-7 bg-green-500/20 border border-green-500/50 rounded-full flex items-center justify-center shrink-0">
+                                    <Mic className="w-3 h-3 text-green-400" />
+                                  </div>
+                                )}
+                              </motion.div>
+                            ))}
+                          </AnimatePresence>
+
+                          {/* Live Transcript (while user is speaking) */}
+                          {currentTranscript && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="flex gap-3 flex-row-reverse"
+                            >
+                              <div className="w-7 h-7 bg-green-500/30 border border-green-400 rounded-full flex items-center justify-center shrink-0 animate-pulse">
+                                <Mic className="w-3 h-3 text-green-300" />
+                              </div>
+                              <div className="max-w-[80%] rounded-2xl rounded-br-md px-4 py-2.5 bg-green-600/50 border border-green-500/50">
+                                <p className="text-sm text-green-100 italic">
+                                  {currentTranscript}...
+                                </p>
+                              </div>
+                            </motion.div>
                           )}
+
+                          {/* AI Processing Indicator */}
+                          {isProcessingRef.current && !isAISpeaking && (
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              className="flex gap-3"
+                            >
+                              <div className="w-7 h-7 bg-blue-500/20 border border-blue-500/50 rounded-full flex items-center justify-center shrink-0">
+                                <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+                              </div>
+                              <div className="bg-zinc-700/50 border border-zinc-600 rounded-2xl rounded-bl-md px-4 py-2.5">
+                                <div className="flex gap-1">
+                                  <motion.div
+                                    className="w-2 h-2 bg-blue-400 rounded-full"
+                                    animate={{ y: [0, -4, 0] }}
+                                    transition={{
+                                      duration: 0.5,
+                                      repeat: Infinity,
+                                    }}
+                                  />
+                                  <motion.div
+                                    className="w-2 h-2 bg-blue-400 rounded-full"
+                                    animate={{ y: [0, -4, 0] }}
+                                    transition={{
+                                      duration: 0.5,
+                                      repeat: Infinity,
+                                      delay: 0.15,
+                                    }}
+                                  />
+                                  <motion.div
+                                    className="w-2 h-2 bg-blue-400 rounded-full"
+                                    animate={{ y: [0, -4, 0] }}
+                                    transition={{
+                                      duration: 0.5,
+                                      repeat: Infinity,
+                                      delay: 0.3,
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+
+                          {/* Scroll anchor */}
+                          <div ref={messagesEndRef} />
+                        </div>
+
+                        {/* Selected Files Display */}
+                        <div className="px-4 py-2 bg-zinc-800/80 border-t border-zinc-700/50">
+                          <div className="flex items-center gap-2 overflow-x-auto">
+                            <span className="text-xs text-zinc-500 shrink-0">
+                              Files:
+                            </span>
+                            {selectedFiles.map((file) => (
+                              <span
+                                key={file}
+                                className="px-2 py-0.5 bg-zinc-700 rounded text-xs font-mono text-zinc-400 whitespace-nowrap"
+                              >
+                                {file.split("/").pop()}
+                              </span>
+                            ))}
+                          </div>
                         </div>
 
                         {/* Call Controls */}
-                        <div className="p-6 border-t border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50">
-                          <div className="flex items-center justify-center gap-6">
+                        <div className="p-4 border-t border-zinc-700 bg-zinc-900 shrink-0">
+                          <div className="flex items-center justify-center gap-4">
                             {/* Mute Button */}
-                            <button
-                              onClick={() => setIsMuted(!isMuted)}
-                              className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
+                            <motion.button
+                              onClick={handleMuteToggle}
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
                                 isMuted
-                                  ? "bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 border-2 border-red-300 dark:border-red-500"
-                                  : "bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-300 dark:hover:bg-zinc-600 border-2 border-zinc-300 dark:border-zinc-600"
+                                  ? "bg-red-500/20 text-red-400 border-2 border-red-500"
+                                  : "bg-zinc-700 text-zinc-200 border-2 border-zinc-600 hover:bg-zinc-600"
                               }`}
                             >
                               {isMuted ? (
-                                <MicOff className="w-6 h-6" />
+                                <MicOff className="w-5 h-5" />
                               ) : (
-                                <Mic className="w-6 h-6" />
+                                <Mic className="w-5 h-5" />
                               )}
-                            </button>
+                            </motion.button>
+
+                            {/* Main Mic Button (Push to Talk when not auto-listening) */}
+                            <motion.button
+                              onClick={() => {
+                                if (
+                                  !isListening &&
+                                  !isAISpeaking &&
+                                  !isProcessingRef.current
+                                ) {
+                                  startListening();
+                                } else if (isListening) {
+                                  stopListening();
+                                }
+                              }}
+                              disabled={
+                                isMuted ||
+                                isAISpeaking ||
+                                isProcessingRef.current
+                              }
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
+                                isListening
+                                  ? "bg-green-500 text-white border-4 border-green-300 shadow-lg shadow-green-500/50"
+                                  : isAISpeaking
+                                  ? "bg-blue-500/20 text-blue-400 border-2 border-blue-500 cursor-not-allowed"
+                                  : isMuted || isProcessingRef.current
+                                  ? "bg-zinc-700 text-zinc-500 border-2 border-zinc-600 cursor-not-allowed"
+                                  : "bg-zinc-700 text-white border-2 border-zinc-500 hover:bg-zinc-600 hover:border-zinc-400"
+                              }`}
+                            >
+                              {isListening ? (
+                                <motion.div
+                                  animate={{ scale: [1, 1.2, 1] }}
+                                  transition={{ duration: 1, repeat: Infinity }}
+                                >
+                                  <Mic className="w-7 h-7" />
+                                </motion.div>
+                              ) : isAISpeaking ? (
+                                <Volume2 className="w-7 h-7" />
+                              ) : (
+                                <Mic className="w-7 h-7" />
+                              )}
+                            </motion.button>
 
                             {/* End Call Button */}
-                            <button
+                            <motion.button
                               onClick={handleEndCall}
-                              className="w-16 h-16 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors border-2 border-red-600"
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              className="w-12 h-12 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors border-2 border-red-400"
                             >
-                              <PhoneOff className="w-7 h-7" />
-                            </button>
+                              <PhoneOff className="w-5 h-5" />
+                            </motion.button>
 
                             {/* Speaker Button */}
-                            <button
+                            <motion.button
                               onClick={() => setIsSpeakerOn(!isSpeakerOn)}
-                              className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
                                 !isSpeakerOn
-                                  ? "bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 border-2 border-red-300 dark:border-red-500"
-                                  : "bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-300 dark:hover:bg-zinc-600 border-2 border-zinc-300 dark:border-zinc-600"
+                                  ? "bg-red-500/20 text-red-400 border-2 border-red-500"
+                                  : "bg-zinc-700 text-zinc-200 border-2 border-zinc-600 hover:bg-zinc-600"
                               }`}
                             >
                               {isSpeakerOn ? (
-                                <Volume2 className="w-6 h-6" />
+                                <Volume2 className="w-5 h-5" />
                               ) : (
-                                <VolumeX className="w-6 h-6" />
+                                <VolumeX className="w-5 h-5" />
                               )}
-                            </button>
+                            </motion.button>
                           </div>
+
+                          {/* Status Text */}
+                          <p className="text-xs text-zinc-500 mt-3 text-center">
+                            {isListening
+                              ? "🎙️ Listening... speak now"
+                              : isAISpeaking
+                              ? "🔊 AI is speaking..."
+                              : isMuted
+                              ? "🔇 Microphone muted"
+                              : "Tap the mic button to speak"}
+                          </p>
 
                           {/* Switch to Chat */}
                           <button
                             onClick={() => {
-                              setIsCallActive(false);
+                              handleEndCall();
                               setSelectedMode("chat");
                             }}
-                            className="mt-4 w-full text-center text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+                            className="mt-3 w-full text-center text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
                           >
                             Switch to Chat Mode
                           </button>
-
-                          <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-3 text-center">
-                            Demo interface - Voice functionality coming soon!
-                          </p>
                         </div>
                       </motion.div>
                     )}

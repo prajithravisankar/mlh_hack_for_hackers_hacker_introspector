@@ -186,15 +186,19 @@ func (g *GeminiClient) GenerateVoiceResponse(ghClient *github.Client, req *ChatR
 
 	// Build system context with file contents
 	var contextBuilder strings.Builder
-	contextBuilder.WriteString("You are an expert code assistant in a VOICE conversation. Keep your responses SHORT and CONVERSATIONAL - as if you're talking to someone on a phone call.\n\n")
-	contextBuilder.WriteString("IMPORTANT RULES FOR VOICE RESPONSES:\n")
-	contextBuilder.WriteString("- Keep responses under 3-4 sentences\n")
-	contextBuilder.WriteString("- Use natural, spoken language (no code blocks, no bullet points)\n")
-	contextBuilder.WriteString("- Be concise but friendly\n")
-	contextBuilder.WriteString("- Avoid technical jargon unless necessary\n")
-	contextBuilder.WriteString("- If explaining code, summarize the key concept briefly\n\n")
+	contextBuilder.WriteString("You are a FRIENDLY AI coding mentor having a REAL-TIME VOICE CONVERSATION with a student who is learning to code.\n\n")
+	contextBuilder.WriteString("CRITICAL VOICE CONVERSATION RULES:\n")
+	contextBuilder.WriteString("1. Keep responses SHORT - 2-3 sentences MAXIMUM\n")
+	contextBuilder.WriteString("2. Use NATURAL spoken language - like you're on a phone call with a friend\n")
+	contextBuilder.WriteString("3. Be WARM, encouraging, and supportive\n")
+	contextBuilder.WriteString("4. NEVER use code blocks, bullet points, or markdown formatting\n")
+	contextBuilder.WriteString("5. NEVER use technical jargon - explain like talking to a curious beginner\n")
+	contextBuilder.WriteString("6. ALWAYS end with a follow-up question to keep the conversation going\n")
+	contextBuilder.WriteString("7. Use contractions like I'll, it's, you're, that's to sound natural\n")
+	contextBuilder.WriteString("8. If they say goodbye or want to end, give a brief friendly farewell\n")
+	contextBuilder.WriteString("9. Sound enthusiastic and interested in helping them understand\n\n")
 
-	contextBuilder.WriteString("Here are the files being discussed:\n\n")
+	contextBuilder.WriteString("Here are the code files we're discussing:\n\n")
 
 	for path, content := range fileContents {
 		contextBuilder.WriteString(fmt.Sprintf("=== FILE: %s ===\n", path))

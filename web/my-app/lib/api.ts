@@ -144,6 +144,18 @@ export async function voiceChatWithRepo(
   });
 }
 
+// Start voice call with greeting
+export async function startVoiceCall(
+  owner: string,
+  repo: string,
+  files: string[]
+): Promise<VoiceChatResponse> {
+  const greeting = `Hi! I'm ready to discuss the ${files.length} file${
+    files.length > 1 ? "s" : ""
+  } you selected. What would you like to know about the code?`;
+  return voiceChatWithRepo(owner, repo, files, greeting, []);
+}
+
 export const api = {
   analyzeRepository,
   getReport,
@@ -151,6 +163,7 @@ export const api = {
   fetchFileTree,
   chatWithRepo,
   voiceChatWithRepo,
+  startVoiceCall,
 };
 
 export default api;
