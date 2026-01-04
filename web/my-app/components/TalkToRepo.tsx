@@ -348,7 +348,7 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                 </div>
 
                 {/* Right Panel - Mode Selection / Chat / Voice Call */}
-                <div className="flex-1 flex flex-col bg-zinc-50 dark:bg-zinc-800/30">
+                <div className="flex-1 flex flex-col bg-zinc-50 dark:bg-zinc-800/30 min-h-0">
                   {/* Mode Selection Screen */}
                   <AnimatePresence mode="wait">
                     {showModeSelection && (
@@ -466,10 +466,10 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        className="flex-1 flex flex-col"
+                        className="flex-1 flex flex-col min-h-0"
                       >
                         {/* Chat Header */}
-                        <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 flex items-center justify-between">
+                        <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 flex items-center justify-between shrink-0">
                           <div className="flex items-center gap-2">
                             <MessageCircle className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
                             <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
@@ -485,7 +485,7 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                         </div>
 
                         {/* Chat Messages Area */}
-                        <div className="flex-1 overflow-auto p-4 space-y-3">
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
                           {/* System Message */}
                           <motion.div
                             initial={{ opacity: 0, y: 10 }}
@@ -605,7 +605,7 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                         </div>
 
                         {/* Chat Input */}
-                        <div className="p-4 border-t border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
+                        <div className="p-4 border-t border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 shrink-0">
                           <div className="flex gap-3">
                             <input
                               type="text"
