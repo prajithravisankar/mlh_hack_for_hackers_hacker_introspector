@@ -14,6 +14,7 @@ import {
   Volume2,
   VolumeX,
   MessageCircle,
+  Square,
 } from "lucide-react";
 import { AiFillGoogleCircle } from "react-icons/ai";
 import FileTree from "./FileTree";
@@ -48,7 +49,9 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
   const [inputValue, setInputValue] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [shouldStop, setShouldStop] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Voice call state
   const [isMuted, setIsMuted] = useState(false);
@@ -175,11 +178,25 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
   // Add messages with dynamic typing animation and random delays (1-3 seconds)
   const addMessagesWithTyping = async (chunks: string[]) => {
     for (let i = 0; i < chunks.length; i++) {
+      // Check if user wants to stop
+      if (shouldStop) {
+        setShouldStop(false);
+        setIsTyping(false);
+        break;
+      }
+
       setIsTyping(true);
 
       // Random typing delay between 1-3 seconds (1000-3000ms)
       const typingDelay = 1000 + Math.random() * 2000;
       await new Promise((resolve) => setTimeout(resolve, typingDelay));
+
+      // Check again after delay
+      if (shouldStop) {
+        setShouldStop(false);
+        setIsTyping(false);
+        break;
+      }
 
       setMessages((prev) => [
         ...prev,
@@ -195,12 +212,20 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
     }
   };
 
+  // Handle stopping the AI response
+  const handleStopResponse = () => {
+    setShouldStop(true);
+    setIsTyping(false);
+    setIsSending(false);
+  };
+
   // Handle sending a message
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isSending || !owner || !repo) return;
 
     const userMessage = inputValue.trim();
     setInputValue("");
+    setShouldStop(false); // Reset stop flag
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setIsSending(true);
 
@@ -520,8 +545,8 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                             animate={{ opacity: 1, y: 0 }}
                             className="flex gap-3"
                           >
-                            <div className="w-7 h-7 bg-blue-500 rounded-lg flex items-center justify-center shrink-0">
-                              <AiFillGoogleCircle className="w-5 h-5 text-white" />
+                            <div className="w-7 h-7 bg-zinc-900 dark:bg-zinc-100 rounded-lg flex items-center justify-center shrink-0">
+                              <AiFillGoogleCircle className="w-5 h-5 text-white dark:text-zinc-900" />
                             </div>
                             <div className="flex-1 bg-white dark:bg-zinc-800 rounded-md p-4 border border-zinc-200 dark:border-zinc-700">
                               <p className="text-sm text-zinc-700 dark:text-zinc-300">
@@ -562,8 +587,8 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                                 }`}
                               >
                                 {message.role === "assistant" && (
-                                  <div className="w-7 h-7 bg-blue-500 rounded-lg flex items-center justify-center shrink-0">
-                                    <AiFillGoogleCircle className="w-5 h-5 text-white" />
+                                  <div className="w-7 h-7 bg-zinc-900 dark:bg-zinc-100 rounded-lg flex items-center justify-center shrink-0">
+                                    <AiFillGoogleCircle className="w-5 h-5 text-white dark:text-zinc-900" />
                                   </div>
                                 )}
                                 <div
@@ -589,8 +614,8 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                               exit={{ opacity: 0 }}
                               className="flex gap-3"
                             >
-                              <div className="w-7 h-7 bg-blue-500 rounded-lg flex items-center justify-center shrink-0">
-                                <AiFillGoogleCircle className="w-5 h-5 text-white" />
+                              <div className="w-7 h-7 bg-zinc-900 dark:bg-zinc-100 rounded-lg flex items-center justify-center shrink-0">
+                                <AiFillGoogleCircle className="w-5 h-5 text-white dark:text-zinc-900" />
                               </div>
                               <div className="bg-white dark:bg-zinc-800 rounded-md p-3 border border-zinc-200 dark:border-zinc-700">
                                 <div className="flex gap-1">
@@ -644,13 +669,26 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                               disabled={isSending}
                               className="flex-1 px-4 py-2 text-sm border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-lg focus:outline-none focus:border-zinc-500 dark:focus:border-zinc-500 disabled:opacity-50"
                             />
-                            <button
-                              onClick={handleSendMessage}
-                              disabled={isSending || !inputValue.trim()}
-                              className="px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <Send className="w-4 h-4" />
-                            </button>
+                            {isSending || isTyping ? (
+                              <button
+                                onClick={handleStopResponse}
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                                title="Stop generating"
+                              >
+                                <Square className="w-4 h-4 fill-current" />
+                                <span className="text-sm font-medium">
+                                  Stop
+                                </span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={handleSendMessage}
+                                disabled={!inputValue.trim()}
+                                className="px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <Send className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </div>
                       </motion.div>
