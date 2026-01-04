@@ -162,8 +162,8 @@ func (h *Handler) ChatWithRepo(c *gin.Context) {
 		return
 	}
 
-	if len(req.Files) > 3 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Maximum 3 files allowed"})
+	if len(req.Files) > 10 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Maximum 10 files allowed"})
 		return
 	}
 
@@ -208,8 +208,8 @@ func (h *Handler) VoiceChatWithRepo(c *gin.Context) {
 		return
 	}
 
-	if len(req.Files) > 3 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Maximum 3 files allowed"})
+	if len(req.Files) > 10 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Maximum 10 files allowed"})
 		return
 	}
 

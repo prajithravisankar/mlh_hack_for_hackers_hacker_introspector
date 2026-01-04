@@ -29,19 +29,19 @@ func NewHandler(geminiClient *ai.GeminiClient, elevenlabsClient *ElevenLabsClien
 
 // VoiceRequest represents a voice conversation request
 type VoiceRequest struct {
-	Owner         string                `json:"owner"`
-	Repo          string                `json:"repo"`
-	Files         []string              `json:"files"`
-	UserMessage   string                `json:"userMessage"`
-	History       []ai.ChatMessage      `json:"history"`
-	IsFirstCall   bool                  `json:"isFirstCall"`
+	Owner       string           `json:"owner"`
+	Repo        string           `json:"repo"`
+	Files       []string         `json:"files"`
+	UserMessage string           `json:"userMessage"`
+	History     []ai.ChatMessage `json:"history"`
+	IsFirstCall bool             `json:"isFirstCall"`
 }
 
 // VoiceResponse represents a voice conversation response
 type VoiceResponse struct {
-	TextResponse  string `json:"textResponse"`
-	AudioBase64   string `json:"audioBase64,omitempty"`
-	Error         string `json:"error,omitempty"`
+	TextResponse string `json:"textResponse"`
+	AudioBase64  string `json:"audioBase64,omitempty"`
+	Error        string `json:"error,omitempty"`
 }
 
 // HandleVoiceConversation handles a voice conversation turn

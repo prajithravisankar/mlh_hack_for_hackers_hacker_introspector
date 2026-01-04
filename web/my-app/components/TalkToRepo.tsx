@@ -587,7 +587,7 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
 
                   {/* Description */}
                   <p className="text-zinc-300 mb-6 text-center max-w-md">
-                    Select up to 3 files and have an AI-powered conversation
+                    Select up to 10 files and have an AI-powered conversation
                     about your code. Get explanations, suggestions, and
                     insights.
                   </p>
@@ -658,7 +658,7 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                       files={fileTree}
                       selectedFiles={selectedFiles}
                       onSelectionChange={setSelectedFiles}
-                      maxSelections={3}
+                      maxSelections={10}
                       isLoading={isLoadingTree}
                     />
                   )}
@@ -780,7 +780,7 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                           Select Files to Start
                         </h5>
                         <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center max-w-xs">
-                          Choose up to 3 files from the repository tree, then
+                          Choose up to 10 files from the repository tree, then
                           click the arrow button to begin your conversation.
                         </p>
 

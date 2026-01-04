@@ -17,7 +17,7 @@ The system uses:
 ### 1. Start a Voice Call
 
 1. Navigate to "Talk to the Repo" section
-2. Select up to 3 files from the file tree
+2. Select up to 10 files from the file tree
 3. Click the arrow button → Select "Talk" mode
 4. The AI will greet you and ask what you'd like to know
 

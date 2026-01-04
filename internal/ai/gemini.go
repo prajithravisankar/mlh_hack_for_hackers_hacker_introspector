@@ -15,10 +15,10 @@ import (
 )
 
 const (
-	// Using Gemini 2.5 Flash - free tier with 5 RPM, 250K TPM, 20 RPD
+	// Using Gemini 3 Flash - free tier with 5 RPM, 250K TPM, 20 RPD
 	// This model is available and has quota in the free tier
-	geminiFlashModel = "gemini-2.5-flash"
-	geminiProModel   = "gemini-2.5-flash" // Using same model for both stages to stay in free tier
+	geminiFlashModel = "gemini-2.5-flash-lite"
+	geminiProModel   = "gemini-2.5-flash-lite" // Using same model for both stages to stay in free tier
 	baseURL          = "https://generativelanguage.googleapis.com/v1beta/models"
 )
 

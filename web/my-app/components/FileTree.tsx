@@ -166,7 +166,7 @@ export default function FileTree({
   files,
   selectedFiles,
   onSelectionChange,
-  maxSelections = 3,
+  maxSelections = 10,
   isLoading = false,
 }: FileTreeProps) {
   const isSelectable = selectedFiles.length < maxSelections;
