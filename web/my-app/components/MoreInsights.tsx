@@ -199,7 +199,11 @@ export default function MoreInsights({ repoName, owner, repo }: Props) {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  {isExpanded ? "← Collapse" : "Generate Smart Hacker Resume →"}
+                  {isExpanded
+                    ? "← Collapse"
+                    : summary
+                    ? "View Previous Resume →"
+                    : "Generate Smart Hacker Resume →"}
                 </motion.button>
 
                 {/* Expanded state - Stage indicators */}

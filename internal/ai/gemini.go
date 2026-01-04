@@ -203,7 +203,7 @@ Based on your analysis, generate a JSON response with this exact structure:
   "key_tech": ["Array", "of", "key", "technologies", "frameworks", "libraries", "detected"],
   "code_quality_score": 7,
   "complexity": "Medium",
-  "latex_code": "\\textbf{Project Name} -- Description $|$ \\href{link}{Demo/Repo} \\hfill Date \\\\ \\begin{itemize}[noitemsep,topsep=0pt] \\item \\textbf{Tech:} List of technologies. \\item Achievement or feature with quantifiable impact. \\item Technical implementation detail showing best practices. \\item Performance metric or architectural decision. \\end{itemize} \\vspace{3pt}"
+  "latex_code": "\\textbf{ProjectName} | 2024 -- \\textbf{Tech:} Go, React, PostgreSQL -- \\textbullet\\ Processed 10K+ daily transactions with 99.9%% reliability -- \\textbullet\\ Implemented caching layer reducing query time by 60%% -- \\textbullet\\ Deployed to production using Docker"
 }
 
 Guidelines for archetype and one_liner:
@@ -213,16 +213,22 @@ Guidelines for archetype and one_liner:
 - code_quality_score: Rate 1-10 based on code organization, naming, structure, error handling
 - complexity: Must be exactly one of "Low", "Medium", or "High"
 
-Guidelines for latex_code:
-- Format as a professional resume entry (similar to the example above)
-- Use proper LaTeX escaping (\\, {}, etc.)
-- Include: Project name, brief description, tech stack, 2-4 bullet points with achievements
-- Use \\textbf{} for emphasis, \\texttt{} for code/technical terms
-- Include quantifiable metrics where possible (performance, scale, impact)
-- Use \\href{} for links if repository URL is obvious
-- Include a date (month year) if detectable from git, otherwise use current year
-- Keep each bullet point concise and impactful
-- End with \\vspace{3pt}
+Guidelines for latex_code (CRITICAL - Must work in standard Overleaf resumes):
+- DO NOT use: \\begin{itemize}...\\end{itemize}, itemize options, \\hfill, \\vspace, or enumitem
+- DO use: \\textbullet\\ for bullet points (simple text-based bullets)
+- Format: One continuous line with simple text structure
+- Use \\textbf{} for emphasis, \\texttt{} for code/technical terms, \\textit{} for italics
+- Separate bullets with \\textbullet\\ (space-bullet-space pattern)
+- Include quantifiable metrics: "2.5K+ users", "50ms response time", "99.9%% uptime"
+- Date format: put at the very end on same line (e.g., "| 2024")
+- Description: should be brief technical description (30-40 words max)
+- Keep bullets concise and impactful (1-2 lines each)
+- Output must be a single paragraph that fits in resume layout
+- All backslashes must be escaped (\\\\) for JSON
+- Structure: ProjectName | Date -- Tech | Bullet1 -- Bullet2 -- Bullet3 -- Bullet4
+
+Example format:
+\\textbf{ProjectName} | 2024 -- \\textbf{Tech:} Go, React, PostgreSQL -- \\textbullet\\ Processed 10K+ daily transactions with 99.9%% reliability -- \\textbullet\\ Implemented caching layer reducing query time by 60%% -- \\textbullet\\ Deployed to production using Docker and Kubernetes
 
 Return ONLY the JSON object, no additional text.`, filesContent.String())
 

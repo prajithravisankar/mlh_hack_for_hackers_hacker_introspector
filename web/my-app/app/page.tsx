@@ -229,7 +229,8 @@ export default function Home() {
             </p>
           )}
           <p className="mt-3 text-xs font-mono text-zinc-400 dark:text-zinc-600">
-            Try: github.com/gin-gonic/gin or any public GitHub repository
+            Try: https://github.com/gin-gonic/gin or any public GitHub
+            repository
           </p>
         </div>
 
