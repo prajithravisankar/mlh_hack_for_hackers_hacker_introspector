@@ -1,6 +1,6 @@
 # 🔍 Hacker Introspector
 
-> **AI-Powered GitHub Repository Analytics & Voice Conversation Platform**
+> **AI-Powered GitHub Repository Analytics & Voice Conversation Platform** Built with Google Gemini, Eleven Labs, and Vultr
 
 Built for **MLH Hack for Hackers 2026** 🏆
 
