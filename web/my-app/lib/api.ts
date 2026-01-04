@@ -1,5 +1,5 @@
 // API client for backend communication
-import { AnalyticsReport } from "@/types/charts";
+import { AnalyticsReport } from "@/types/analytics";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
