@@ -13,6 +13,7 @@ import {
   RepoHeader,
 } from "@/components/analytics";
 import MoreInsights from "@/components/MoreInsights";
+import TalkToRepo from "@/components/TalkToRepo";
 import { analyzeRepository } from "@/lib/api";
 import {
   AnalyticsReport,
@@ -294,6 +295,13 @@ export default function Home() {
 
             {/* AI Insights Section (Unchanged) */}
             <MoreInsights
+              repoName={report.repo_info.full_name}
+              owner={owner}
+              repo={repo}
+            />
+
+            {/* Talk to Repo Section */}
+            <TalkToRepo
               repoName={report.repo_info.full_name}
               owner={owner}
               repo={repo}
