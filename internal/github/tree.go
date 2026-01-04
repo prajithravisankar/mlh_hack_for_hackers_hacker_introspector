@@ -150,7 +150,7 @@ func (c *Client) FetchFileTree(owner, repo string) ([]FileNode, error) {
 func buildFileTree(entries []TreeEntry) []FileNode {
 	// Create a map to store nodes by path (using pointers)
 	nodeMap := make(map[string]*FileNode)
-	
+
 	// Root node to collect top-level items
 	root := &FileNode{
 		Name:     "",
@@ -188,7 +188,7 @@ func buildFileTree(entries []TreeEntry) []FileNode {
 	// Second pass: build hierarchy by linking children to parents
 	for _, entry := range entries {
 		parts := strings.Split(entry.Path, "/")
-		
+
 		var parentPath string
 		if len(parts) == 1 {
 			parentPath = "" // Root level
@@ -205,7 +205,7 @@ func buildFileTree(entries []TreeEntry) []FileNode {
 
 		// Get current node
 		currentNode := nodeMap[entry.Path]
-		
+
 		// Append to parent's children
 		parent.Children = append(parent.Children, *currentNode)
 	}
@@ -213,21 +213,21 @@ func buildFileTree(entries []TreeEntry) []FileNode {
 	// Now we need to rebuild with updated children
 	// The issue is that when we append currentNode to parent.Children,
 	// we're copying the value at that moment, so we need to do a final rebuild
-	
+
 	return buildTreeRecursive(root.Children, nodeMap)
 }
 
 // buildTreeRecursive rebuilds the tree with proper nested children
 func buildTreeRecursive(nodes []FileNode, nodeMap map[string]*FileNode) []FileNode {
 	result := make([]FileNode, 0, len(nodes))
-	
+
 	for _, node := range nodes {
 		newNode := FileNode{
 			Name: node.Name,
 			Path: node.Path,
 			Type: node.Type,
 		}
-		
+
 		if node.Type == "folder" {
 			// Get the actual children from the map
 			if mapNode, exists := nodeMap[node.Path]; exists && len(mapNode.Children) > 0 {
@@ -236,13 +236,13 @@ func buildTreeRecursive(nodes []FileNode, nodeMap map[string]*FileNode) []FileNo
 				newNode.Children = []FileNode{}
 			}
 		}
-		
+
 		result = append(result, newNode)
 	}
-	
+
 	// Sort: folders first, then files, both alphabetically
 	sortFileNodes(result)
-	
+
 	return result
 }
 
