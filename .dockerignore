@@ -1,0 +1,56 @@
+# Frontend - DO NOT include in backend container
+web/
+
+# Git
+.git
+.gitignore
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Local database
+dev.db
+*.db
+
+# Node modules (in case any exist)
+node_modules/
+
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of go coverage tool
+*.out
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker files (no need to copy these into the container)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation
+*.md
+*.pdf
+Hack For Hackers.pdf
+
+# Compiled binary (we build fresh in Docker)
+main
+server
