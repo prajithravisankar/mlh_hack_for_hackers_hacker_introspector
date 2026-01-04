@@ -134,7 +134,7 @@ func (g *GeminiClient) callGemini(model, prompt string, jsonOutput bool) (string
 
 // Stage 1: Analyze file tree and identify critical files
 func (g *GeminiClient) IdentifyCriticalFiles(treeString string) ([]string, error) {
-	prompt := fmt.Sprintf(`You are a Senior Software Architect. Analyze this file structure of a repository and identify the top 5 most critical files that reveal the core logic of this project.
+	prompt := fmt.Sprintf(`You are a Senior Software Architect. Analyze this file structure of a repository and identify the top 7 most critical files that reveal the core logic of this project.
 
 Focus on:
 - Main entry points (main.go, index.js, app.py, etc.)
@@ -142,6 +142,8 @@ Focus on:
 - API handlers or controllers
 - Key service/model files
 - Configuration files that reveal architecture
+- Database or persistence layer files
+- Important utility or helper files
 
 Ignore:
 - Lock files (package-lock.json, go.sum, etc.)
@@ -153,9 +155,9 @@ File Structure:
 %s
 
 Return ONLY a valid JSON object with this exact structure:
-{"files": ["path/to/file1", "path/to/file2", "path/to/file3", "path/to/file4", "path/to/file5"]}
+{"files": ["path/to/file1", "path/to/file2", "path/to/file3", "path/to/file4", "path/to/file5", "path/to/file6", "path/to/file7"]}
 
-Important: Return exactly 5 files. If there are fewer important files, include the most relevant ones available.`, treeString)
+Important: Return exactly 7 files. If there are fewer important files, include the most relevant ones available.`, treeString)
 
 	response, err := g.callGemini(geminiFlashModel, prompt, true)
 	if err != nil {
@@ -190,7 +192,7 @@ func (g *GeminiClient) GenerateDeepSummary(files map[string]string) (*models.Sma
 		filesContent.WriteString("\n")
 	}
 
-	prompt := fmt.Sprintf(`You are an expert code analyst. Analyze these critical source files from a software project and generate a comprehensive summary.
+	prompt := fmt.Sprintf(`You are an expert code analyst AND a professional resume writer. Analyze these critical source files from a software project and generate a comprehensive summary PLUS a LaTeX-formatted resume entry.
 
 %s
 
@@ -200,15 +202,27 @@ Based on your analysis, generate a JSON response with this exact structure:
   "one_liner": "A compelling one-sentence description of what this project does and its purpose",
   "key_tech": ["Array", "of", "key", "technologies", "frameworks", "libraries", "detected"],
   "code_quality_score": 7,
-  "complexity": "Medium"
+  "complexity": "Medium",
+  "latex_code": "\\textbf{Project Name} -- Description $|$ \\href{link}{Demo/Repo} \\hfill Date \\\\ \\begin{itemize}[noitemsep,topsep=0pt] \\item \\textbf{Tech:} List of technologies. \\item Achievement or feature with quantifiable impact. \\item Technical implementation detail showing best practices. \\item Performance metric or architectural decision. \\end{itemize} \\vspace{3pt}"
 }
 
-Guidelines:
+Guidelines for archetype and one_liner:
 - archetype: Should be concise, like "REST API in Go" or "Next.js Dashboard"
 - one_liner: Should be engaging and explain the project's purpose (max 150 chars)
-- key_tech: List 3-7 key technologies, frameworks, or patterns detected
+- key_tech: List 5-8 key technologies, frameworks, or patterns detected
 - code_quality_score: Rate 1-10 based on code organization, naming, structure, error handling
 - complexity: Must be exactly one of "Low", "Medium", or "High"
+
+Guidelines for latex_code:
+- Format as a professional resume entry (similar to the example above)
+- Use proper LaTeX escaping (\\, {}, etc.)
+- Include: Project name, brief description, tech stack, 2-4 bullet points with achievements
+- Use \\textbf{} for emphasis, \\texttt{} for code/technical terms
+- Include quantifiable metrics where possible (performance, scale, impact)
+- Use \\href{} for links if repository URL is obvious
+- Include a date (month year) if detectable from git, otherwise use current year
+- Keep each bullet point concise and impactful
+- End with \\vspace{3pt}
 
 Return ONLY the JSON object, no additional text.`, filesContent.String())
 

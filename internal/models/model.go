@@ -48,6 +48,7 @@ type SmartSummary struct {
 	KeyTech          []string `json:"key_tech"`           // ["Gin", "GORM", "Next.js"]
 	CodeQualityScore int      `json:"code_quality_score"` // 1-10
 	Complexity       string   `json:"complexity"`         // "Low", "Medium", "High"
+	LatexCode        string   `json:"latex_code"`         // LaTeX resume entry for hackathon
 }
 
 // FileTreeResponse represents the structure analysis from Stage 1

@@ -167,7 +167,7 @@ export default function MoreInsights({ repoName, owner, repo }: Props) {
                     isExpanded ? "text-left" : "text-center"
                   }`}
                 >
-                  {isExpanded ? "Smart Summary" : "Want AI Insights?"}
+                  {isExpanded ? "Smart Hacker Resume" : "Want AI Insights?"}
                 </motion.h3>
 
                 {/* Description */}
@@ -199,7 +199,7 @@ export default function MoreInsights({ repoName, owner, repo }: Props) {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  {isExpanded ? "← Collapse" : "Generate Smart Summary →"}
+                  {isExpanded ? "← Collapse" : "Generate Smart Hacker Resume →"}
                 </motion.button>
 
                 {/* Expanded state - Stage indicators */}
@@ -508,6 +508,38 @@ export default function MoreInsights({ repoName, owner, repo }: Props) {
                               {tech}
                             </motion.span>
                           ))}
+                        </div>
+                      </motion.div>
+
+                      {/* LaTeX Resume Entry */}
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: 0.55 }}
+                        className="mt-6 p-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <Code2 className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
+                            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                              LaTeX Resume Entry
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(summary.latex_code);
+                              // Optional: Show toast notification
+                              alert("LaTeX code copied to clipboard!");
+                            }}
+                            className="px-2 py-1 text-xs bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded hover:opacity-80 transition-opacity font-medium"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                        <div className="bg-white dark:bg-zinc-900 p-3 rounded border border-zinc-300 dark:border-zinc-700 overflow-auto max-h-48">
+                          <code className="text-xs font-mono text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">
+                            {summary.latex_code}
+                          </code>
                         </div>
                       </motion.div>
 

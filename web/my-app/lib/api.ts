@@ -10,6 +10,7 @@ export interface SmartSummary {
   key_tech: string[];
   code_quality_score: number;
   complexity: "Low" | "Medium" | "High";
+  latex_code: string;
 }
 
 export class ApiError extends Error {
