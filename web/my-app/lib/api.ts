@@ -97,11 +97,60 @@ export async function fetchFileTree(
   return response.tree;
 }
 
+// Chat message type
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+// Chat response type
+export interface ChatResponse {
+  response: string;
+  error?: string;
+}
+
+// Voice chat response type
+export interface VoiceChatResponse {
+  response: string;
+  audio?: string; // base64 encoded audio
+  audio_error?: string;
+}
+
+// Chat with repo
+export async function chatWithRepo(
+  owner: string,
+  repo: string,
+  files: string[],
+  message: string,
+  history: ChatMessage[] = []
+): Promise<ChatResponse> {
+  return fetchAPI<ChatResponse>("/api/chat", {
+    method: "POST",
+    body: JSON.stringify({ owner, repo, files, message, history }),
+  });
+}
+
+// Voice chat with repo
+export async function voiceChatWithRepo(
+  owner: string,
+  repo: string,
+  files: string[],
+  message: string,
+  history: ChatMessage[] = []
+): Promise<VoiceChatResponse> {
+  return fetchAPI<VoiceChatResponse>("/api/voice-chat", {
+    method: "POST",
+    body: JSON.stringify({ owner, repo, files, message, history }),
+  });
+}
+
 export const api = {
   analyzeRepository,
   getReport,
   generateSmartSummary,
   fetchFileTree,
+  chatWithRepo,
+  voiceChatWithRepo,
 };
 
 export default api;

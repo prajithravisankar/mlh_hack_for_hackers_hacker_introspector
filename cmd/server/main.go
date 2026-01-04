@@ -32,14 +32,17 @@ func main() {
 	// 3. Initialize Gemini AI Client
 	geminiClient := ai.NewGeminiClient()
 
-	// 4. Create Repository (The Pantry Manager)
+	// 4. Initialize ElevenLabs TTS Client
+	elevenLabsClient := ai.NewElevenLabsClient()
+
+	// 5. Create Repository (The Pantry Manager)
 	repo := introspect.NewReportRepository(db.GlobalDatabaseAccessor)
 
-	// 5. Create Handler (The Chef)
-	// We now pass the repo, github client, and gemini client!
-	handler := introspect.NewHandler(repo, ghClient, geminiClient)
+	// 6. Create Handler (The Chef)
+	// We now pass the repo, github client, gemini client, and elevenlabs client!
+	handler := introspect.NewHandler(repo, ghClient, geminiClient, elevenLabsClient)
 
-	// 5. Setup Router
+	// 7. Setup Router
 	router := gin.Default()
 
 	// CORS Setup
@@ -64,6 +67,8 @@ func main() {
 		api.GET("/report/:owner/:repo", handler.GetReport)
 		api.POST("/smart-summary", handler.SmartSummary)
 		api.POST("/file-tree", handler.GetFileTree)
+		api.POST("/chat", handler.ChatWithRepo)
+		api.POST("/voice-chat", handler.VoiceChatWithRepo)
 	}
 
 	log.Println("server started on port :8080...")

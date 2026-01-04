@@ -301,11 +301,7 @@ export default function Home() {
             />
 
             {/* Talk to Repo Section */}
-            <TalkToRepo
-              repoName={report.repo_info.full_name}
-              owner={owner}
-              repo={repo}
-            />
+            <TalkToRepo owner={owner} repo={repo} />
           </div>
         )}
 
