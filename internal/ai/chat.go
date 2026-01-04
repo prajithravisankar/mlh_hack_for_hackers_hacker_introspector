@@ -19,11 +19,11 @@ type ChatMessage struct {
 
 // ChatRequest represents the request for chat
 type ChatRequest struct {
-	Owner    string        `json:"owner"`
-	Repo     string        `json:"repo"`
-	Files    []string      `json:"files"`    // File paths to discuss
-	Message  string        `json:"message"`  // User's message
-	History  []ChatMessage `json:"history"`  // Previous conversation history
+	Owner   string        `json:"owner"`
+	Repo    string        `json:"repo"`
+	Files   []string      `json:"files"`   // File paths to discuss
+	Message string        `json:"message"` // User's message
+	History []ChatMessage `json:"history"` // Previous conversation history
 }
 
 // ChatResponse represents the response from chat
@@ -54,7 +54,7 @@ func (g *GeminiClient) Chat(ghClient *github.Client, req *ChatRequest) (*ChatRes
 	// Build system context with file contents
 	var contextBuilder strings.Builder
 	contextBuilder.WriteString("You are an expert code assistant. You have access to the following files from the repository:\n\n")
-	
+
 	for path, content := range fileContents {
 		contextBuilder.WriteString(fmt.Sprintf("=== FILE: %s ===\n", path))
 		// Truncate very long files
@@ -64,7 +64,7 @@ func (g *GeminiClient) Chat(ghClient *github.Client, req *ChatRequest) (*ChatRes
 		contextBuilder.WriteString(content)
 		contextBuilder.WriteString("\n\n")
 	}
-	
+
 	contextBuilder.WriteString("\nBased on the above code, please answer the user's questions. Be concise, helpful, and provide code examples when appropriate. If asked to explain code, break it down clearly. If asked to find bugs or suggest improvements, be specific and actionable.\n")
 
 	// Build the conversation for Gemini
@@ -73,17 +73,17 @@ func (g *GeminiClient) Chat(ghClient *github.Client, req *ChatRequest) (*ChatRes
 	// Add system context as first user message if no history
 	if len(req.History) == 0 {
 		contents = append(contents, GeminiChatContent{
-			Role: "user",
+			Role:  "user",
 			Parts: []Part{{Text: contextBuilder.String() + "\n\nUser question: " + req.Message}},
 		})
 	} else {
 		// Add system context
 		contents = append(contents, GeminiChatContent{
-			Role: "user",
+			Role:  "user",
 			Parts: []Part{{Text: contextBuilder.String()}},
 		})
 		contents = append(contents, GeminiChatContent{
-			Role: "model",
+			Role:  "model",
 			Parts: []Part{{Text: "I've analyzed the files. I'm ready to help you understand the code. What would you like to know?"}},
 		})
 
@@ -182,9 +182,9 @@ func (g *GeminiClient) GenerateVoiceResponse(ghClient *github.Client, req *ChatR
 	contextBuilder.WriteString("- Be concise but friendly\n")
 	contextBuilder.WriteString("- Avoid technical jargon unless necessary\n")
 	contextBuilder.WriteString("- If explaining code, summarize the key concept briefly\n\n")
-	
+
 	contextBuilder.WriteString("Here are the files being discussed:\n\n")
-	
+
 	for path, content := range fileContents {
 		contextBuilder.WriteString(fmt.Sprintf("=== FILE: %s ===\n", path))
 		// More aggressive truncation for voice mode
@@ -200,16 +200,16 @@ func (g *GeminiClient) GenerateVoiceResponse(ghClient *github.Client, req *ChatR
 
 	if len(req.History) == 0 {
 		contents = append(contents, GeminiChatContent{
-			Role: "user",
+			Role:  "user",
 			Parts: []Part{{Text: contextBuilder.String() + "\n\nUser says: " + req.Message}},
 		})
 	} else {
 		contents = append(contents, GeminiChatContent{
-			Role: "user",
+			Role:  "user",
 			Parts: []Part{{Text: contextBuilder.String()}},
 		})
 		contents = append(contents, GeminiChatContent{
-			Role: "model",
+			Role:  "model",
 			Parts: []Part{{Text: "Got it, I've looked at the files. What would you like to know?"}},
 		})
 

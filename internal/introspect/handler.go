@@ -11,17 +11,17 @@ import (
 )
 
 type Handler struct {
-	repo            *ReportRepository
-	githubClient    *github.Client
-	geminiClient    *ai.GeminiClient
+	repo             *ReportRepository
+	githubClient     *github.Client
+	geminiClient     *ai.GeminiClient
 	elevenLabsClient *ai.ElevenLabsClient
 }
 
 func NewHandler(repo *ReportRepository, githubClient *github.Client, geminiClient *ai.GeminiClient, elevenLabsClient *ai.ElevenLabsClient) *Handler {
 	return &Handler{
-		repo:            repo,
-		githubClient:    githubClient,
-		geminiClient:    geminiClient,
+		repo:             repo,
+		githubClient:     githubClient,
+		geminiClient:     geminiClient,
 		elevenLabsClient: elevenLabsClient,
 	}
 }
@@ -236,8 +236,8 @@ func (h *Handler) VoiceChatWithRepo(c *gin.Context) {
 		// Return text response even if TTS fails
 		fmt.Printf("TTS failed: %v, returning text only\n", err)
 		c.JSON(http.StatusOK, gin.H{
-			"response":   response.Response,
-			"audio":      nil,
+			"response":    response.Response,
+			"audio":       nil,
 			"audio_error": err.Error(),
 		})
 		return
