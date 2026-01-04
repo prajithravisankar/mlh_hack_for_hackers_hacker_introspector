@@ -38,12 +38,12 @@ func (c *Client) FetchEverything(owner, repoName string) (*models.AnalyticsRepor
 		}
 	}()
 
-	// 3. COMMITS (Always fetch most recent 100 commits for hackathon repos)
+	// 3. COMMITS (Fetch ALL commits with pagination)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
-		// A. Fetch raw list
+		// A. Fetch raw list (paginated - fetches all commits)
 		rawCommits, err := c.FetchCommitsRaw(owner, repoName, "", "")
 		if err != nil {
 			fmt.Printf("Error fetching commits: %v\n", err)

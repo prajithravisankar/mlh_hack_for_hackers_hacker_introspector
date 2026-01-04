@@ -42,9 +42,9 @@ type Part struct {
 }
 
 type GenerationConfig struct {
-	Temperature     float64 `json:"temperature,omitempty"`
-	MaxOutputTokens int     `json:"maxOutputTokens,omitempty"`
-	ResponseMimeType string `json:"responseMimeType,omitempty"`
+	Temperature      float64 `json:"temperature,omitempty"`
+	MaxOutputTokens  int     `json:"maxOutputTokens,omitempty"`
+	ResponseMimeType string  `json:"responseMimeType,omitempty"`
 }
 
 // GeminiResponse represents the response from Gemini API
@@ -78,7 +78,7 @@ func (g *GeminiClient) callGemini(model, prompt string, jsonOutput bool) (string
 		Temperature:     0.7,
 		MaxOutputTokens: 4096,
 	}
-	
+
 	if jsonOutput {
 		config.ResponseMimeType = "application/json"
 	}

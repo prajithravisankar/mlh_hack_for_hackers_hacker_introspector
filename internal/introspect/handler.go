@@ -55,7 +55,7 @@ func (h *Handler) AnalyzeRepo(c *gin.Context) {
 		return
 	}
 
-	// Fetch fresh data (always fetches last 100 commits)
+	// Fetch fresh data (fetches ALL commits with pagination)
 	fmt.Println("Fetching fresh data for", fullName)
 	report, err := h.githubClient.FetchEverything(owner, repoName)
 	if err != nil {

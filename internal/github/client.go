@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -18,7 +19,7 @@ func NewClient() *Client {
 	return &Client{
 		token: os.Getenv("GITHUB_TOKEN"),
 		httpClient: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: 30 * time.Second, // Increased timeout for larger requests
 		},
 	}
 }
@@ -46,6 +47,49 @@ func (client *Client) get(url string, target interface{}) error {
 	return json.NewDecoder(response.Body).Decode(target)
 }
 
+// getWithPagination fetches data and returns the next page URL if available
+func (client *Client) getWithPagination(url string, target interface{}) (string, error) {
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+
+	request.Header.Set("Authorization", "token "+client.token)
+	request.Header.Set("Accept", "application/vnd.github.v3+json")
+
+	response, err := client.httpClient.Do(request)
+	if err != nil {
+		return "", err
+	}
+
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("github api error: %s returned status %d", url, response.StatusCode)
+	}
+
+	// Parse Link header for pagination
+	nextURL := parseLinkHeader(response.Header.Get("Link"))
+
+	return nextURL, json.NewDecoder(response.Body).Decode(target)
+}
+
+// parseLinkHeader extracts the "next" URL from the GitHub Link header
+// Example: <https://api.github.com/repos/...?page=2>; rel="next", <https://...?page=5>; rel="last"
+func parseLinkHeader(linkHeader string) string {
+	if linkHeader == "" {
+		return ""
+	}
+
+	// Regex to find the "next" link
+	re := regexp.MustCompile(`<([^>]+)>;\s*rel="next"`)
+	matches := re.FindStringSubmatch(linkHeader)
+	if len(matches) >= 2 {
+		return matches[1]
+	}
+	return ""
+}
+
 func ExtractOwnerAndRepo(repoURL string) (string, string, error) {
 	trimmed := strings.TrimPrefix(repoURL, "https://")
 	trimmed = strings.TrimPrefix(trimmed, "http://")
@@ -70,18 +114,31 @@ func (client *Client) FetchCommitsRaw(owner, repo, since, until string) ([]map[s
 	}
 
 	var allCommits []map[string]interface{}
+	pageCount := 0
 
 	for url != "" {
 		var pageCommits []map[string]interface{}
+		pageCount++
 
-		if err := client.get(url, &pageCommits); err != nil {
+		fmt.Printf("  Fetching page %d of commits...\n", pageCount)
+
+		nextURL, err := client.getWithPagination(url, &pageCommits)
+		if err != nil {
 			return nil, err
 		}
 
 		allCommits = append(allCommits, pageCommits...)
 
-		break // for mvp no more than 100 commits
+		// Move to next page (empty string means no more pages)
+		url = nextURL
+
+		// Safety limit: stop at 50 pages (5000 commits) to prevent infinite loops
+		if pageCount >= 50 {
+			fmt.Printf("  Reached page limit (50 pages), stopping pagination\n")
+			break
+		}
 	}
 
+	fmt.Printf("  Fetched %d total commits across %d pages\n", len(allCommits), pageCount)
 	return allCommits, nil
 }
