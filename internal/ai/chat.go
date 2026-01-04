@@ -53,7 +53,18 @@ func (g *GeminiClient) Chat(ghClient *github.Client, req *ChatRequest) (*ChatRes
 
 	// Build system context with file contents
 	var contextBuilder strings.Builder
-	contextBuilder.WriteString("You are an expert code assistant. You have access to the following files from the repository:\n\n")
+	contextBuilder.WriteString("You are an expert code assistant having a CHAT conversation. Keep your responses EXTREMELY SHORT and CONVERSATIONAL.\n\n")
+	contextBuilder.WriteString("CRITICAL RULES (MUST FOLLOW):\n")
+	contextBuilder.WriteString("- MAXIMUM 3 sentences per response - NO EXCEPTIONS\n")
+	contextBuilder.WriteString("- Each sentence: 10-20 words maximum\n")
+	contextBuilder.WriteString("- Total response: under 50 words\n")
+	contextBuilder.WriteString("- Use natural, friendly language like texting\n")
+	contextBuilder.WriteString("- End each sentence with proper punctuation (. ! or ?)\n")
+	contextBuilder.WriteString("- Be direct and concise - avoid unnecessary explanations\n")
+	contextBuilder.WriteString("- If explaining code, give ONE key insight, not details\n")
+	contextBuilder.WriteString("- Think: What would a friend text back?\n\n")
+
+	contextBuilder.WriteString("Here are the files from the repository:\n\n")
 
 	for path, content := range fileContents {
 		contextBuilder.WriteString(fmt.Sprintf("=== FILE: %s ===\n", path))
@@ -65,7 +76,7 @@ func (g *GeminiClient) Chat(ghClient *github.Client, req *ChatRequest) (*ChatRes
 		contextBuilder.WriteString("\n\n")
 	}
 
-	contextBuilder.WriteString("\nBased on the above code, please answer the user's questions. Be concise, helpful, and provide code examples when appropriate. If asked to explain code, break it down clearly. If asked to find bugs or suggest improvements, be specific and actionable.\n")
+	contextBuilder.WriteString("\nAnswer the user's questions following the rules above. Be concise, friendly, and conversational.\n")
 
 	// Build the conversation for Gemini
 	var contents []GeminiChatContent
@@ -123,7 +134,7 @@ func (g *GeminiClient) callGeminiChat(contents []GeminiChatContent) (string, err
 		Contents: contents,
 		GenerationConfig: GenerationConfig{
 			Temperature:     0.7,
-			MaxOutputTokens: 2048,
+			MaxOutputTokens: 80, // ~50 words = 3 short sentences
 		},
 	}
 

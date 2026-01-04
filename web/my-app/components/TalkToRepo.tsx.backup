@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare,
@@ -17,14 +17,9 @@ import {
   MessageCircle,
 } from "lucide-react";
 import FileTree from "./FileTree";
-import { fetchFileTree, chatWithRepo, FileNode } from "@/lib/api";
+import { fetchFileTree, FileNode } from "@/lib/api";
 
 type InteractionMode = "chat" | "talk" | null;
-
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-}
 
 interface TalkToRepoProps {
   repoName?: string;
@@ -43,23 +38,11 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
   const [isLoadingTree, setIsLoadingTree] = useState(false);
   const [treeError, setTreeError] = useState<string | null>(null);
 
-  // Chat state
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputValue, setInputValue] = useState("");
-  const [isSending, setIsSending] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
   // Voice call state
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
   const [callDuration, setCallDuration] = useState(0);
   const [isCallActive, setIsCallActive] = useState(false);
-
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
 
   // Call duration timer
   useEffect(() => {
@@ -139,74 +122,6 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
   const handleBackToSelection = () => {
     setSelectedMode(null);
     setShowModeSelection(false);
-  };
-
-  // Split response into sentences (max 3)
-  const splitIntoSentences = (text: string): string[] => {
-    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-    return sentences.slice(0, 3).map((s) => s.trim());
-  };
-
-  // Add messages with typing animation
-  const addMessagesWithTyping = async (sentences: string[]) => {
-    for (let i = 0; i < sentences.length; i++) {
-      setIsTyping(true);
-      await new Promise((resolve) =>
-        setTimeout(resolve, 600 + Math.random() * 400)
-      );
-
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: sentences[i] },
-      ]);
-      setIsTyping(false);
-
-      if (i < sentences.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 200));
-      }
-    }
-  };
-
-  // Handle sending a message
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || isSending || !owner || !repo) return;
-
-    const userMessage = inputValue.trim();
-    setInputValue("");
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
-    setIsSending(true);
-
-    try {
-      const response = await chatWithRepo(
-        owner,
-        repo,
-        selectedFiles,
-        userMessage,
-        messages
-      );
-
-      const sentences = splitIntoSentences(response.response);
-      await addMessagesWithTyping(sentences);
-    } catch (err) {
-      console.error("Chat error:", err);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "Sorry, I encountered an error. Please try again.",
-        },
-      ]);
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  // Handle Enter key press
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
   };
 
   return (
@@ -485,7 +400,7 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                         </div>
 
                         {/* Chat Messages Area */}
-                        <div className="flex-1 overflow-auto p-4 space-y-3">
+                        <div className="flex-1 overflow-auto p-4 space-y-4">
                           {/* System Message */}
                           <motion.div
                             initial={{ opacity: 0, y: 10 }}
@@ -515,93 +430,27 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                             </div>
                           </motion.div>
 
-                          {/* Conversation Messages */}
-                          <AnimatePresence mode="popLayout">
-                            {messages.map((message, index) => (
-                              <motion.div
-                                key={`message-${index}`}
-                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                transition={{
-                                  duration: 0.3,
-                                  ease: "easeOut",
-                                }}
-                                className={`flex gap-3 ${
-                                  message.role === "user"
-                                    ? "flex-row-reverse"
-                                    : ""
-                                }`}
+                          {/* Placeholder suggestions */}
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="flex flex-wrap gap-2 px-11"
+                          >
+                            {[
+                              "Explain this code",
+                              "Find potential bugs",
+                              "Suggest improvements",
+                              "What does this do?",
+                            ].map((suggestion) => (
+                              <button
+                                key={suggestion}
+                                className="px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
                               >
-                                {message.role === "assistant" && (
-                                  <div className="w-8 h-8 bg-zinc-900 dark:bg-zinc-100 rounded-full flex items-center justify-center shrink-0">
-                                    <Bot className="w-4 h-4 text-white dark:text-zinc-900" />
-                                  </div>
-                                )}
-                                <div
-                                  className={`max-w-[75%] rounded-lg p-3 ${
-                                    message.role === "user"
-                                      ? "bg-zinc-900 dark:bg-zinc-700 text-white"
-                                      : "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300"
-                                  }`}
-                                >
-                                  <p className="text-sm leading-relaxed">
-                                    {message.content}
-                                  </p>
-                                </div>
-                              </motion.div>
+                                {suggestion}
+                              </button>
                             ))}
-                          </AnimatePresence>
-
-                          {/* Typing Indicator */}
-                          {isTyping && (
-                            <motion.div
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0 }}
-                              className="flex gap-3"
-                            >
-                              <div className="w-8 h-8 bg-zinc-900 dark:bg-zinc-100 rounded-full flex items-center justify-center shrink-0">
-                                <Bot className="w-4 h-4 text-white dark:text-zinc-900" />
-                              </div>
-                              <div className="bg-white dark:bg-zinc-800 rounded-lg p-3 border border-zinc-200 dark:border-zinc-700">
-                                <div className="flex gap-1">
-                                  <motion.div
-                                    className="w-2 h-2 bg-zinc-400 dark:bg-zinc-500 rounded-full"
-                                    animate={{ y: [0, -6, 0] }}
-                                    transition={{
-                                      duration: 0.6,
-                                      repeat: Infinity,
-                                      ease: "easeInOut",
-                                    }}
-                                  />
-                                  <motion.div
-                                    className="w-2 h-2 bg-zinc-400 dark:bg-zinc-500 rounded-full"
-                                    animate={{ y: [0, -6, 0] }}
-                                    transition={{
-                                      duration: 0.6,
-                                      repeat: Infinity,
-                                      delay: 0.2,
-                                      ease: "easeInOut",
-                                    }}
-                                  />
-                                  <motion.div
-                                    className="w-2 h-2 bg-zinc-400 dark:bg-zinc-500 rounded-full"
-                                    animate={{ y: [0, -6, 0] }}
-                                    transition={{
-                                      duration: 0.6,
-                                      repeat: Infinity,
-                                      delay: 0.4,
-                                      ease: "easeInOut",
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-
-                          {/* Scroll anchor */}
-                          <div ref={messagesEndRef} />
+                          </motion.div>
                         </div>
 
                         {/* Chat Input */}
@@ -609,21 +458,16 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                           <div className="flex gap-3">
                             <input
                               type="text"
-                              value={inputValue}
-                              onChange={(e) => setInputValue(e.target.value)}
-                              onKeyPress={handleKeyPress}
                               placeholder="Ask about the selected files..."
-                              disabled={isSending}
-                              className="flex-1 px-4 py-2 text-sm border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-lg focus:outline-none focus:border-zinc-500 dark:focus:border-zinc-500 disabled:opacity-50"
+                              className="flex-1 px-4 py-2 text-sm font-mono border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-lg focus:outline-none focus:border-zinc-500 dark:focus:border-zinc-500"
                             />
-                            <button
-                              onClick={handleSendMessage}
-                              disabled={isSending || !inputValue.trim()}
-                              className="px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
+                            <button className="px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg hover:opacity-90 transition-opacity">
                               <Send className="w-4 h-4" />
                             </button>
                           </div>
+                          <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2 text-center">
+                            Demo interface - Chat functionality coming soon!
+                          </p>
                         </div>
                       </motion.div>
                     )}
