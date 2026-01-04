@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare,
   Send,
-  Bot,
   ArrowRight,
   AlertCircle,
   Phone,
@@ -16,6 +15,7 @@ import {
   VolumeX,
   MessageCircle,
 } from "lucide-react";
+import { AiFillGoogleCircle } from "react-icons/ai";
 import FileTree from "./FileTree";
 import { fetchFileTree, chatWithRepo, FileNode } from "@/lib/api";
 
@@ -423,8 +423,8 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                         exit={{ opacity: 0 }}
                         className="flex-1 flex flex-col items-center justify-center p-8"
                       >
-                        <div className="w-16 h-16 bg-zinc-200 dark:bg-zinc-700 rounded-full flex items-center justify-center mb-4">
-                          <Bot className="w-8 h-8 text-zinc-400 dark:text-zinc-500" />
+                        <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center mb-4">
+                          <AiFillGoogleCircle className="w-10 h-10 text-blue-500" />
                         </div>
                         <h5 className="text-lg font-bold text-zinc-700 dark:text-zinc-300 mb-2">
                           Select Files to Start
@@ -492,10 +492,10 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                             animate={{ opacity: 1, y: 0 }}
                             className="flex gap-3"
                           >
-                            <div className="w-8 h-8 bg-zinc-900 dark:bg-zinc-100 rounded-full flex items-center justify-center shrink-0">
-                              <Bot className="w-4 h-4 text-white dark:text-zinc-900" />
+                            <div className="w-7 h-7 bg-blue-500 rounded-lg flex items-center justify-center shrink-0">
+                              <AiFillGoogleCircle className="w-5 h-5 text-white" />
                             </div>
-                            <div className="flex-1 bg-white dark:bg-zinc-800 rounded-lg p-4 border border-zinc-200 dark:border-zinc-700">
+                            <div className="flex-1 bg-white dark:bg-zinc-800 rounded-md p-4 border border-zinc-200 dark:border-zinc-700">
                               <p className="text-sm text-zinc-700 dark:text-zinc-300">
                                 I&apos;ve loaded{" "}
                                 <strong>{selectedFiles.length} file(s)</strong>{" "}
@@ -534,14 +534,14 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                                 }`}
                               >
                                 {message.role === "assistant" && (
-                                  <div className="w-8 h-8 bg-zinc-900 dark:bg-zinc-100 rounded-full flex items-center justify-center shrink-0">
-                                    <Bot className="w-4 h-4 text-white dark:text-zinc-900" />
+                                  <div className="w-7 h-7 bg-blue-500 rounded-lg flex items-center justify-center shrink-0">
+                                    <AiFillGoogleCircle className="w-5 h-5 text-white" />
                                   </div>
                                 )}
                                 <div
-                                  className={`max-w-[75%] rounded-lg p-3 ${
+                                  className={`max-w-[75%] rounded-md p-3 ${
                                     message.role === "user"
-                                      ? "bg-zinc-900 dark:bg-zinc-700 text-white"
+                                      ? "bg-zinc-700 dark:bg-zinc-700 text-white"
                                       : "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300"
                                   }`}
                                 >
@@ -561,10 +561,10 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                               exit={{ opacity: 0 }}
                               className="flex gap-3"
                             >
-                              <div className="w-8 h-8 bg-zinc-900 dark:bg-zinc-100 rounded-full flex items-center justify-center shrink-0">
-                                <Bot className="w-4 h-4 text-white dark:text-zinc-900" />
+                              <div className="w-7 h-7 bg-blue-500 rounded-lg flex items-center justify-center shrink-0">
+                                <AiFillGoogleCircle className="w-5 h-5 text-white" />
                               </div>
-                              <div className="bg-white dark:bg-zinc-800 rounded-lg p-3 border border-zinc-200 dark:border-zinc-700">
+                              <div className="bg-white dark:bg-zinc-800 rounded-md p-3 border border-zinc-200 dark:border-zinc-700">
                                 <div className="flex gap-1">
                                   <motion.div
                                     className="w-2 h-2 bg-zinc-400 dark:bg-zinc-500 rounded-full"
@@ -642,8 +642,8 @@ export default function TalkToRepo({ repoName, owner, repo }: TalkToRepoProps) {
                         <div className="flex-1 flex flex-col items-center justify-center p-8">
                           {/* AI Avatar */}
                           <div className="relative">
-                            <div className="w-24 h-24 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center border-2 border-zinc-200 dark:border-zinc-700">
-                              <Bot className="w-12 h-12 text-zinc-700 dark:text-zinc-300" />
+                            <div className="w-24 h-24 bg-blue-100 dark:bg-blue-900/20 rounded-xl flex items-center justify-center border-2 border-blue-200 dark:border-blue-800">
+                              <AiFillGoogleCircle className="w-14 h-14 text-blue-500" />
                             </div>
                           </div>
 
