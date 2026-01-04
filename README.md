@@ -1,4 +1,6 @@
-# 🔍 Hacker Introspector
+![mlh_hack_for_hackers_hacker_introspector](https://socialify.git.ci/prajithravisankar/mlh_hack_for_hackers_hacker_introspector/image?custom_language=Go&description=1&font=JetBrains+Mono&language=1&name=1&owner=1&pattern=Solid&stargazers=1&theme=Dark)
+
+# Hacker Introspector
 
 > **AI-Powered GitHub Repository Analytics & Voice Conversation Platform** Built with Google Gemini, Eleven Labs, and Vultr
 
