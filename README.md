@@ -261,12 +261,6 @@ See [VOICE_SETUP_GUIDE.md](./VOICE_SETUP_GUIDE.md) for detailed setup instructio
 
 ---
 
-## 📄 License
-
-MIT License - Built with ❤️ for MLH Hack for Hackers 2026
-
----
-
 ## 👨‍💻 Author
 
 **Prajith Ravisankar**
@@ -282,3 +276,5 @@ MIT License - Built with ❤️ for MLH Hack for Hackers 2026
 - [ElevenLabs](https://elevenlabs.io/) - Voice synthesis
 - [Vercel](https://vercel.com/) - Frontend hosting
 - [Vultr](https://www.vultr.com/) - Backend hosting
+
+Built with ❤️ for MLH Hack for Hackers 2026
