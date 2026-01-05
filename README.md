@@ -4,6 +4,9 @@
 
 > **AI-Powered GitHub Repository Analytics & Voice Conversation Platform** Built with Google Gemini, Eleven Labs, and Vultr
 
+https://github.com/user-attachments/assets/b27c50a1-f266-4890-ba7b-6f83ff91cbc9
+
+
 Built for **MLH Hack for Hackers 2026** 🏆
 
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat&logo=go)](https://golang.org/)
@@ -13,28 +16,28 @@ Built for **MLH Hack for Hackers 2026** 🏆
 [![Vultr](https://img.shields.io/badge/Vultr-TTS-000000?style=flat)](https://www.vultr.com/promo/try250?service=try250&utm_source=google-na-brand&utm_medium=paidmedia&obility_id=42460259882&utm_campaign=NA_-_Search_-_Vultr_Branded_-_1009&utm_term=vultr%20vps&utm_content=665882116752&gad_source=1&gad_campaignid=780450717&gbraid=0AAAAADMuDjDFYO5p25Bl6OeHSBFGBn34q&gclid=Cj0KCQiAvOjKBhC9ARIsAFvz5ljs-zYeq5Wt3p9dEHhQzRS_wrjLfY6xCFvIj19aAa3TEC7RQV02hVQaAg9uEALw_wcB)
 ---
 
-## ✨ Features
+## Features
 
-### 📊 Repository Analytics
+### Repository Analytics
 - **Deep GitHub Analysis** - Analyze any public GitHub repository
 - **Commit Heatmaps** - Visualize contribution patterns over time
 - **Language Breakdown** - See tech stack distribution with interactive pie charts
 - **Contributor Insights** - Understand who's driving the project
 - **Code Quality Scoring** - AI-powered assessment of code health
 
-### 🤖 AI-Powered Smart Summary
+### AI-Powered Smart Summary
 - **Project Archetype Detection** - Automatically categorize repos (Web App, CLI Tool, Library, etc.)
 - **One-liner Descriptions** - Get concise project summaries
 - **Key Technology Extraction** - Identify core technologies and frameworks
 - **Complexity Analysis** - Low/Medium/High complexity ratings
 
-### 💬 Talk to Your Repo (Chat Mode)
+### Talk to Your Repo (Chat Mode)
 - Select up to **10 files** from any repository
 - Have natural conversations about the code
 - Get explanations, suggestions, and insights
 - Conversation history maintained throughout session
 
-### 🎙️ Voice Conversation (NEW!)
+### Voice Conversation (NEW!)
 - **Real-time voice calls** with AI about your code
 - Speech-to-text using Web Speech API
 - Natural voice responses via **ElevenLabs TTS**
@@ -255,15 +258,6 @@ See [VOICE_SETUP_GUIDE.md](./VOICE_SETUP_GUIDE.md) for detailed setup instructio
 - **Framer Motion** - Animations
 - **Recharts** - Data visualization
 - **Lucide Icons** - Icon library
-
----
-
-## 🔐 Security Notes
-
-- Never commit `.env` files
-- Use environment variables for all secrets
-- The backend uses `AllowOrigins: ["*"]` for development - restrict in production
-- GitHub tokens should have minimal required scopes
 
 ---
 
